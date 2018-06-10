@@ -2,6 +2,7 @@
 
 import os
 import sys
+import select
 
 def die(message = ''):
     sys.stderr.write(message + '\n')
@@ -10,24 +11,44 @@ def die(message = ''):
 def die_usage():
     die('usage: {:s} prog [ arg ... ]'.format(sys.argv[0]))
 
-def do_proxy_stuff(from_client, to_server,
-                   from_server, to_client):
-    pass
+def read_and_process_until_either_end_closes(from_client, to_server,
+                                             from_server, to_client):
+    buffer_size = 77
 
-def teardown_proxy_and_exit(child, from_server, to_server):
+    someone_closed = 0
+    while not someone_closed:
+        (readable, writable, exceptional) = select.select([from_client, from_server], [], [])
+
+        for fd in readable:
+            if fd == from_client:
+                more = os.read(fd, buffer_size)
+                if not more:
+                    someone_closed += 1
+                    break
+                os.write(to_server, more)
+
+            if fd == from_server:
+                more = os.read(fd, buffer_size)
+                if not more:
+                    someone_closed += 1
+                    break
+                os.write(to_client, more)
+        else:
+            break
+
+def teardown_and_exit(child, from_server, to_server):
     os.close(from_server)
     os.close(to_server)
-
-    os.waitpid(child, 0)
-    # XXX check return value, exit with exit code, etc.
+    (pid, exitcode, resources) = os.wait4(child, 0)
+    sys.exit(exitcode)
 
 def be_parent(from_client, to_client,
               from_proxy, to_proxy,
               from_server, to_server,
               child):
     setup_proxy(from_proxy, to_proxy)
-    do_proxy_stuff(from_client, to_server, from_server, to_client)
-    teardown_proxy_and_exit(child, from_server, to_server)
+    read_and_process_until_either_end_closes(from_client, to_server, from_server, to_client)
+    teardown_and_exit(child, from_server, to_server)
 
 def use_as_stdin(fd):
     sys.stdin = os.fdopen(fd, 'rb')

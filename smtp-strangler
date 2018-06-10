@@ -42,10 +42,10 @@ def teardown_and_exit(child, from_server, to_server):
     (pid, exitcode, resources) = os.wait4(child, 0)
     sys.exit(exitcode)
 
-def be_parent(from_client, to_client,
-              from_proxy, to_proxy,
-              from_server, to_server,
-              child):
+def be_proxy(from_client, to_client,
+             from_proxy,  to_proxy,
+             from_server, to_server,
+             child):
     os.close(from_proxy)
     os.close(to_proxy)
     read_and_process_until_either_end_closes(from_client, to_server, from_server, to_client)
@@ -57,9 +57,9 @@ def use_as_stdin(fd):
 def use_as_stdout(fd):
     sys.stdout = os.fdopen(fd, 'wb') # XXX 'ab'?
 
-def be_child(from_proxy, to_proxy,
-             from_server, to_server,
-             args):
+def be_proxied(from_proxy,  to_proxy,
+               from_server, to_server,
+               args):
     os.close(from_server)
     os.close(to_server)
     use_as_stdin(from_proxy)
@@ -76,15 +76,15 @@ def main(args):
     (from_server, to_proxy) = os.pipe()
 
     child = os.fork()
-    if (child):
-        be_parent(from_client, to_client,
-                  from_proxy, to_proxy,
-                  from_server, to_server,
-                  child)
-    else:
-        be_child(from_proxy, to_proxy,
+    if child:
+        be_proxy(from_client, to_client,
+                 from_proxy,  to_proxy,
                  from_server, to_server,
-                 args)
+                 child)
+    else:
+        be_proxied(from_proxy,  to_proxy,
+                   from_server, to_server,
+                   args)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

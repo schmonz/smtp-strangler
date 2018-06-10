@@ -51,19 +51,13 @@ def be_proxy(from_client, to_client,
     read_and_process_until_either_end_closes(from_client, to_server, from_server, to_client)
     teardown_and_exit(child, from_server, to_server)
 
-def use_as_stdin(fd):
-    sys.stdin = os.fdopen(fd, 'rb')
-
-def use_as_stdout(fd):
-    sys.stdout = os.fdopen(fd, 'wb') # XXX 'ab'?
-
 def be_proxied(from_proxy,  to_proxy,
                from_server, to_server,
                args):
     os.close(from_server)
     os.close(to_server)
-    use_as_stdin(from_proxy)
-    use_as_stdout(to_proxy)
+    sys.stdin = os.fdopen(from_proxy, 'rb')
+    sys.stdout = os.fdopen(to_proxy, 'wb') # XXX 'ab'?
     os.execvp(args[0], args)
     die
 

@@ -46,7 +46,8 @@ def be_parent(from_client, to_client,
               from_proxy, to_proxy,
               from_server, to_server,
               child):
-    setup_proxy(from_proxy, to_proxy)
+    os.close(from_proxy)
+    os.close(to_proxy)
     read_and_process_until_either_end_closes(from_client, to_server, from_server, to_client)
     teardown_and_exit(child, from_server, to_server)
 
@@ -56,26 +57,15 @@ def use_as_stdin(fd):
 def use_as_stdout(fd):
     sys.stdout = os.fdopen(fd, 'wb') # XXX 'ab'?
 
-def setup_server(from_proxy, to_server,
-                 from_server, to_proxy):
+def be_child(from_proxy, to_proxy,
+             from_server, to_server,
+             args):
     os.close(from_server)
     os.close(to_server)
     use_as_stdin(from_proxy)
     use_as_stdout(to_proxy)
-
-def exec_server_and_never_return(args):
     os.execvp(args[0], args)
     die
-
-def be_child(from_proxy, to_proxy,
-             from_server, to_server,
-             args):
-    setup_server(from_proxy, to_server, from_server, to_proxy)
-    exec_server_and_never_return(args)
-
-def setup_proxy(from_proxy, to_proxy):
-    os.close(from_proxy)
-    os.close(to_proxy)
 
 def main(args):
     if (len(args) == 0):

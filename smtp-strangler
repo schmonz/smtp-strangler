@@ -9,7 +9,7 @@ def die(message = ''):
     sys.exit(1)
 
 def die_usage():
-    die('usage: {:s} prog [ arg ... ]'.format(sys.argv[0]))
+    die('usage: {:s} prog [ arg ... ]'.format(os.path.basename(sys.argv[0])))
 
 def read_and_process_until_either_end_closes(from_client, to_server,
                                              from_server, to_client):

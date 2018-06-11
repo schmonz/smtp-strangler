@@ -4,36 +4,52 @@ import os
 import sys
 import select
 
+def logit(message, fd=2):
+    os.write(fd, message + b'\n')
+    pass
+
 def die(message = b''):
-    os.write(2, message + b'\n')
+    logit(message)
     sys.exit(1)
 
 def die_usage():
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
     die(b'usage: ' + this_program + b' prog [ arg ... ]')
 
+def log_client_bytes(message):
+    logit(b'client< ' + message)
+
+def log_server_bytes(message):
+    logit(b'server> ' + message)
+
 def read_and_process_until_either_end_closes(from_client, to_server,
                                              from_server, to_client):
     buffer_size = 77
 
+    want_to_read = [from_client, from_server]
+
     someone_closed = 0
     while not someone_closed:
-        (readable, writable, exceptional) = select.select([from_client, from_server], [], [])
+        (readable, writable, exceptional) = select.select(want_to_read, [], [])
 
         for fd in readable:
             if fd == from_client:
                 more = os.read(from_client, buffer_size)
                 if more:
+                    log_client_bytes(more)
                     os.write(to_server, more)
                 else:
                     someone_closed += 1
+                    log_client_bytes(b'[dropped connection]')
 
             if fd == from_server:
                 more = os.read(from_server, buffer_size)
                 if more:
+                    log_server_bytes(more)
                     os.write(to_client, more)
                 else:
                     someone_closed += 1
+                    log_server_bytes(b'[dropped connection]')
 
 def teardown_and_exit(child, from_server, to_server):
     os.close(from_server)

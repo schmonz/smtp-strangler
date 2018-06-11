@@ -40,22 +40,35 @@ def handle_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
         log_disconnect_fn()
         return False
 
+def readable_fds(of_these):
+    (readable, writable, exceptional) = select.select(of_these, [], [])
+    return readable
+
 def read_and_process_until_either_end_closes(from_client, to_server,
                                              from_server, to_client):
-    want_to_read = [from_client, from_server]
+    handler_args_for = {
+        from_client: (
+            from_client,
+            to_server,
+            log_client_bytes,
+            log_client_disconnect,
+        ),
+        from_server: (
+            from_server,
+            to_client,
+            log_server_bytes,
+            log_server_disconnect,
+        ),
+    }
 
-    still_open = True
-    while still_open:
-        (readable, writable, exceptional) = select.select(want_to_read, [], [])
+    potentially_readable_fds = list(handler_args_for.keys())
 
-        for fd in readable:
-            if fd == from_client:
-                if not handle_bytes(from_client, to_server, log_client_bytes, log_client_disconnect):
-                    still_open = False
-
-            if fd == from_server:
-                if not handle_bytes(from_server, to_client, log_server_bytes, log_server_disconnect):
-                    still_open = False
+    is_open = True
+    while is_open:
+        for fd in readable_fds(potentially_readable_fds):
+            handler_args = handler_args_for[fd]
+            if not handle_bytes(*handler_args):
+                is_open = False
 
 def teardown_and_exit(child, from_server, to_server):
     os.close(from_server)

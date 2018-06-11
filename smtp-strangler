@@ -19,13 +19,29 @@ def die_usage():
 def log_client_bytes(message):
     logit(b'client< ' + message)
 
+def log_client_disconnect():
+    log_client_bytes(b'[dropped connection]')
+
 def log_server_bytes(message):
     logit(b'server> ' + message)
 
-def read_and_process_until_either_end_closes(from_client, to_server,
-                                             from_server, to_client):
+def log_server_disconnect():
+    log_server_bytes(b'[dropped connection]')
+
+def handle_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
     buffer_size = 77
 
+    some_bytes = os.read(from_fd, buffer_size)
+    if some_bytes:
+        log_bytes_fn(some_bytes)
+        os.write(to_fd, some_bytes)
+        return True
+    else:
+        log_disconnect_fn()
+        return False
+
+def read_and_process_until_either_end_closes(from_client, to_server,
+                                             from_server, to_client):
     want_to_read = [from_client, from_server]
 
     still_open = True
@@ -34,21 +50,11 @@ def read_and_process_until_either_end_closes(from_client, to_server,
 
         for fd in readable:
             if fd == from_client:
-                more = os.read(from_client, buffer_size)
-                if more:
-                    log_client_bytes(more)
-                    os.write(to_server, more)
-                else:
-                    log_client_bytes(b'[dropped connection]')
+                if not handle_bytes(from_client, to_server, log_client_bytes, log_client_disconnect):
                     still_open = False
 
             if fd == from_server:
-                more = os.read(from_server, buffer_size)
-                if more:
-                    log_server_bytes(more)
-                    os.write(to_client, more)
-                else:
-                    log_server_bytes(b'[dropped connection]')
+                if not handle_bytes(from_server, to_client, log_server_bytes, log_server_disconnect):
                     still_open = False
 
 def teardown_and_exit(child, from_server, to_server):

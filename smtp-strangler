@@ -28,8 +28,8 @@ def read_and_process_until_either_end_closes(from_client, to_server,
 
     want_to_read = [from_client, from_server]
 
-    someone_closed = 0
-    while not someone_closed:
+    still_open = True
+    while still_open:
         (readable, writable, exceptional) = select.select(want_to_read, [], [])
 
         for fd in readable:
@@ -39,8 +39,8 @@ def read_and_process_until_either_end_closes(from_client, to_server,
                     log_client_bytes(more)
                     os.write(to_server, more)
                 else:
-                    someone_closed += 1
                     log_client_bytes(b'[dropped connection]')
+                    still_open = False
 
             if fd == from_server:
                 more = os.read(from_server, buffer_size)
@@ -48,8 +48,8 @@ def read_and_process_until_either_end_closes(from_client, to_server,
                     log_server_bytes(more)
                     os.write(to_client, more)
                 else:
-                    someone_closed += 1
                     log_server_bytes(b'[dropped connection]')
+                    still_open = False
 
 def teardown_and_exit(child, from_server, to_server):
     os.close(from_server)
@@ -77,7 +77,7 @@ def be_proxied(from_proxy,  to_proxy,
     die
 
 def main(args):
-    if (len(args) == 0):
+    if 0 == len(args):
         die_usage()
 
     (from_client, to_client) = (0, 1)
@@ -95,10 +95,12 @@ def main(args):
                    from_server, to_server,
                    args)
 
-if __name__ == '__main__':
+
+if '__main__' == __name__:
     main(sys.argv[1:])
 
 # XXX
+# 0. Log only entire requests and entire responses
 # 1. Catch up to fixsmtpio_*.c
 # 2. Check on 2.7 and 3.6
 # 3. Test-drive from scratch (with both Pythons) for a git-crawl demo

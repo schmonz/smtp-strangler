@@ -4,8 +4,8 @@ import os
 import sys
 import select
 
-def logit(message, fd=2):
-    os.write(fd, message + b'\n')
+def logit(message):
+    os.write(2, message + b'\n')
     pass
 
 def die(message = b''):
@@ -28,7 +28,7 @@ def log_server_bytes(message):
 def log_server_disconnect():
     log_server_bytes(b'[dropped connection]')
 
-def handle_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
+def handle_some_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
     buffer_size = 77
 
     some_bytes = os.read(from_fd, buffer_size)
@@ -67,7 +67,7 @@ def read_and_process_until_either_end_closes(from_client, to_server,
     while is_open:
         for fd in readable_fds(potentially_readable_fds):
             handler_args = handler_args_for[fd]
-            if not handle_bytes(*handler_args):
+            if not handle_some_bytes(*handler_args):
                 is_open = False
 
 def teardown_and_exit(child, from_server, to_server):
@@ -82,7 +82,8 @@ def be_proxy(from_client, to_client,
              child):
     os.close(from_proxy)
     os.close(to_proxy)
-    read_and_process_until_either_end_closes(from_client, to_server, from_server, to_client)
+    read_and_process_until_either_end_closes(from_client, to_server,
+                                             from_server, to_client)
     teardown_and_exit(child, from_server, to_server)
 
 def be_proxied(from_proxy,  to_proxy,
@@ -91,17 +92,17 @@ def be_proxied(from_proxy,  to_proxy,
     os.close(from_server)
     os.close(to_server)
     os.dup2(from_proxy, 0)
-    os.dup2(to_proxy, 1)
+    os.dup2(to_proxy,   1)
     os.execvp(args[0], args)
     die
 
 def main(args):
-    if 0 == len(args):
+    if not args:
         die_usage()
 
     (from_client, to_client) = (0, 1)
-    (from_proxy, to_server) = os.pipe()
-    (from_server, to_proxy) = os.pipe()
+    (from_proxy,  to_server) = os.pipe()
+    (from_server, to_proxy)  = os.pipe()
 
     child = os.fork()
     if child:

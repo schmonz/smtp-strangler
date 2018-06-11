@@ -4,12 +4,13 @@ import os
 import sys
 import select
 
-def die(message = ''):
-    sys.stderr.write(message + '\n')
+def die(message = b''):
+    os.write(2, message + b'\n')
     sys.exit(1)
 
 def die_usage():
-    die('usage: {:s} prog [ arg ... ]'.format(os.path.basename(sys.argv[0])))
+    this_program = os.path.basename(sys.argv[0]).encode('ASCII')
+    die(b'usage: ' + this_program + b' prog [ arg ... ]')
 
 def read_and_process_until_either_end_closes(from_client, to_server,
                                              from_server, to_client):
@@ -21,20 +22,18 @@ def read_and_process_until_either_end_closes(from_client, to_server,
 
         for fd in readable:
             if fd == from_client:
-                more = os.read(fd, buffer_size)
-                if not more:
+                more = os.read(from_client, buffer_size)
+                if more:
+                    os.write(to_server, more)
+                else:
                     someone_closed += 1
-                    break
-                os.write(to_server, more)
 
             if fd == from_server:
-                more = os.read(fd, buffer_size)
-                if not more:
+                more = os.read(from_server, buffer_size)
+                if more:
+                    os.write(to_client, more)
+                else:
                     someone_closed += 1
-                    break
-                os.write(to_client, more)
-        else:
-            break
 
 def teardown_and_exit(child, from_server, to_server):
     os.close(from_server)
@@ -56,8 +55,8 @@ def be_proxied(from_proxy,  to_proxy,
                args):
     os.close(from_server)
     os.close(to_server)
-    sys.stdin = os.fdopen(from_proxy, 'rb')
-    sys.stdout = os.fdopen(to_proxy, 'wb') # XXX 'ab'?
+    os.dup2(from_proxy, 0)
+    os.dup2(to_proxy, 1)
     os.execvp(args[0], args)
     die
 
@@ -65,7 +64,7 @@ def main(args):
     if (len(args) == 0):
         die_usage()
 
-    (from_client, to_client) = (sys.stdin, sys.stdout)
+    (from_client, to_client) = (0, 1)
     (from_proxy, to_server) = os.pipe()
     (from_server, to_proxy) = os.pipe()
 

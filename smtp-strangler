@@ -89,25 +89,31 @@ def teardown_and_exit(child, from_server, to_server):
 
 
 def be_proxy(from_client, to_client,
-             from_proxy, to_proxy,
              from_server, to_server,
              child):
-    os.close(from_proxy)
-    os.close(to_proxy)
     read_and_process_until_either_end_closes(from_client, to_server,
                                              from_server, to_client)
     teardown_and_exit(child, from_server, to_server)
 
 
 def be_proxied(from_proxy, to_proxy,
-               from_server, to_server,
                args):
-    os.close(from_server)
-    os.close(to_server)
     os.dup2(from_proxy, 0)
     os.dup2(to_proxy, 1)
     os.execvp(args[0], args)
     die()
+
+
+def fork_and_prep(from_proxy, to_server,
+                  from_server, to_proxy):
+    child = os.fork()
+    if child:
+        os.close(from_proxy)
+        os.close(to_proxy)
+    else:
+        os.close(from_server)
+        os.close(to_server)
+    return child
 
 
 def main(args):
@@ -118,15 +124,14 @@ def main(args):
     (from_proxy, to_server) = os.pipe()
     (from_server, to_proxy) = os.pipe()
 
-    child = os.fork()
+    child = fork_and_prep(from_proxy, to_server,
+                          from_server, to_proxy)
     if child:
         be_proxy(from_client, to_client,
-                 from_proxy, to_proxy,
                  from_server, to_server,
                  child)
     else:
         be_proxied(from_proxy, to_proxy,
-                   from_server, to_server,
                    args)
 
 

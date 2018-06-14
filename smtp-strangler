@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import os, select, sys
+import os
+import select
+import sys
 
 
 class SMTPStrangler:

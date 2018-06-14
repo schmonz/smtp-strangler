@@ -116,23 +116,28 @@ def fork_and_prep(from_proxy, to_server,
     return child
 
 
+class SMTPStrangler():
+    def __init__(self, args):
+        if not args:
+            die_usage()
+
+        (from_client, to_client) = (0, 1)
+        (from_proxy, to_server) = os.pipe()
+        (from_server, to_proxy) = os.pipe()
+
+        child = fork_and_prep(from_proxy, to_server,
+                              from_server, to_proxy)
+        if child:
+            be_proxy(from_client, to_client,
+                     from_server, to_server,
+                     child)
+        else:
+            be_proxied(from_proxy, to_proxy,
+                       args)
+
+
 def main(args):
-    if not args:
-        die_usage()
-
-    (from_client, to_client) = (0, 1)
-    (from_proxy, to_server) = os.pipe()
-    (from_server, to_proxy) = os.pipe()
-
-    child = fork_and_prep(from_proxy, to_server,
-                          from_server, to_proxy)
-    if child:
-        be_proxy(from_client, to_client,
-                 from_server, to_server,
-                 child)
-    else:
-        be_proxied(from_proxy, to_proxy,
-                   args)
+    SMTPStrangler(args)
 
 
 if '__main__' == __name__:

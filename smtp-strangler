@@ -119,14 +119,10 @@ class SMTPProxied:
         os.execvp(command_line_arguments[0], command_line_arguments)
 
 
-def die(logger, message=b''):
-    logger.logit(message)
-    sys.exit(1)
-
-
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
-    die(logger, b'usage: ' + this_program + b' prog [ arg ... ]')
+    logger.logit(b'usage: ' + this_program + b' prog [ arg ... ]')
+    sys.exit(1)
 
 
 def main(command_line_arguments):

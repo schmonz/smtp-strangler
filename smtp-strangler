@@ -88,22 +88,6 @@ def teardown_and_exit(child, from_server, to_server):
     sys.exit(exitcode)
 
 
-def be_proxy(from_client, to_client,
-             from_server, to_server,
-             child):
-    read_and_process_until_either_end_closes(from_client, to_server,
-                                             from_server, to_client)
-    teardown_and_exit(child, from_server, to_server)
-
-
-def be_proxied(from_proxy, to_proxy,
-               args):
-    os.dup2(from_proxy, 0)
-    os.dup2(to_proxy, 1)
-    os.execvp(args[0], args)
-    die()
-
-
 def fork_and_prep(from_proxy, to_server,
                   from_server, to_proxy):
     child = os.fork()
@@ -116,11 +100,31 @@ def fork_and_prep(from_proxy, to_server,
     return child
 
 
-class SMTPStrangler():
+class SMTPProxy:
+    def __init__(self,
+                 from_client, to_client,
+                 from_server, to_server,
+                 child):
+        read_and_process_until_either_end_closes(from_client, to_server,
+                                                 from_server, to_client)
+        teardown_and_exit(child, from_server, to_server)
+
+
+class SMTPProxied:
+    def __init__(self,
+                 from_proxy, to_proxy,
+                 args):
+        os.dup2(from_proxy, 0)
+        os.dup2(to_proxy, 1)
+        os.execvp(args[0], args)
+
+
+class SMTPStrangler:
     def __init__(self, args):
         if not args:
             die_usage()
 
+        # XXX how can I split objects into SMTPProxy, SMTPProxied
         (from_client, to_client) = (0, 1)
         (from_proxy, to_server) = os.pipe()
         (from_server, to_proxy) = os.pipe()
@@ -128,12 +132,12 @@ class SMTPStrangler():
         child = fork_and_prep(from_proxy, to_server,
                               from_server, to_proxy)
         if child:
-            be_proxy(from_client, to_client,
-                     from_server, to_server,
-                     child)
+            SMTPProxy(from_client, to_client,
+                      from_server, to_server,
+                      child)
         else:
-            be_proxied(from_proxy, to_proxy,
-                       args)
+            SMTPProxied(from_proxy, to_proxy,
+                        args)
 
 
 def main(args):

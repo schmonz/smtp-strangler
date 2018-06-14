@@ -36,18 +36,6 @@ def log_server_disconnect():
     log_server_bytes(b'[dropped connection]')
 
 
-def fork_and_prep(from_proxy, to_server,
-                  from_server, to_proxy):
-    child = os.fork()
-    if child:
-        os.close(from_proxy)
-        os.close(to_proxy)
-    else:
-        os.close(from_server)
-        os.close(to_server)
-    return child
-
-
 class SMTPProxy:
     def __init__(self, child, from_client, to_server, from_server, to_client):
         self.child = child
@@ -125,11 +113,23 @@ class SMTPStrangler:
         (from_proxy, to_server) = os.pipe()
         (from_server, to_proxy) = os.pipe()
 
-        child = fork_and_prep(from_proxy, to_server, from_server, to_proxy)
+        child = self.fork_and_prep(from_proxy, to_server, from_server, to_proxy)
         if child:
             SMTPProxy(child, from_client, to_server, from_server, to_client)
         else:
             SMTPProxied(args, from_client, to_proxy, from_proxy, to_client)
+
+    @staticmethod
+    def fork_and_prep(from_proxy, to_server,
+                      from_server, to_proxy):
+        child = os.fork()
+        if child:
+            os.close(from_proxy)
+            os.close(to_proxy)
+        else:
+            os.close(from_server)
+            os.close(to_server)
+        return child
 
 
 def main(args):

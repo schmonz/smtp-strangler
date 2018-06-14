@@ -110,9 +110,9 @@ class SMTPProxy:
 
 
 class SMTPProxied:
-    def __init__(self, args, from_proxy, to_proxy):
-        os.dup2(from_proxy, 0)
-        os.dup2(to_proxy, 1)
+    def __init__(self, args, from_client, to_proxy, from_proxy, to_client):
+        os.dup2(from_proxy, from_client)
+        os.dup2(to_proxy, to_client)
         os.execvp(args[0], args)
 
 
@@ -125,12 +125,11 @@ class SMTPStrangler:
         (from_proxy, to_server) = os.pipe()
         (from_server, to_proxy) = os.pipe()
 
-        child = fork_and_prep(from_proxy, to_server,
-                              from_server, to_proxy)
+        child = fork_and_prep(from_proxy, to_server, from_server, to_proxy)
         if child:
             SMTPProxy(child, from_client, to_server, from_server, to_client)
         else:
-            SMTPProxied(args, from_proxy, to_proxy)
+            SMTPProxied(args, from_client, to_proxy, from_proxy, to_client)
 
 
 def main(args):

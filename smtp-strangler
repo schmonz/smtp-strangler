@@ -47,18 +47,6 @@ class SMTPLogger:
         this_program = os.path.basename(sys.argv[0]).encode('ASCII')
         self.die(b'usage: ' + this_program + b' prog [ arg ... ]')
 
-    def log_client_bytes(self, message):
-        self.logit(b'client< ' + message)
-
-    def log_client_disconnect(self):
-        self.log_client_bytes(b'[dropped connection]')
-
-    def log_server_bytes(self, message):
-        self.logit(b'server> ' + message)
-
-    def log_server_disconnect(self):
-        self.log_server_bytes(b'[dropped connection]')
-
 
 class SMTPProxy:
     def __init__(self, child, logger, from_client, to_server, from_server, to_client):
@@ -71,6 +59,18 @@ class SMTPProxy:
 
         self.read_and_process_until_either_end_closes()
         self.teardown_and_exit()
+
+    def log_client_bytes(self, message):
+        self.logger.logit(b'client< ' + message)
+
+    def log_server_bytes(self, message):
+        self.logger.logit(b'server> ' + message)
+
+    def log_client_disconnect(self):
+        self.log_client_bytes(b'[dropped connection]')
+
+    def log_server_disconnect(self):
+        self.log_server_bytes(b'[dropped connection]')
 
     @staticmethod
     def handle_some_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
@@ -95,14 +95,14 @@ class SMTPProxy:
             self.from_client: (
                 self.from_client,
                 self.to_server,
-                self.logger.log_client_bytes,
-                self.logger.log_client_disconnect,
+                self.log_client_bytes,
+                self.log_client_disconnect,
             ),
             self.from_server: (
                 self.from_server,
                 self.to_client,
-                self.logger.log_server_bytes,
-                self.logger.log_server_disconnect,
+                self.log_server_bytes,
+                self.log_server_disconnect,
             ),
         }
 

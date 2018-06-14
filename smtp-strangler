@@ -15,7 +15,7 @@ class SMTPStrangler:
         if child_process_id:
             SMTPProxy(child_process_id, logger, from_client, to_server, from_server, to_client)
         else:
-            SMTPProxied(command_line_arguments, from_client, to_proxy, from_proxy, to_client)
+            SMTPProxied(command_line_arguments, logger, from_client, to_proxy, from_proxy, to_client)
 
     @staticmethod
     def fork_and_prep(from_proxy, to_server,
@@ -113,11 +113,13 @@ class SMTPProxy:
 
 
 class SMTPProxied:
-    def __init__(self, command_line_arguments, from_client, to_proxy, from_proxy, to_client):
+    def __init__(self, command_line_arguments, logger, from_client, to_proxy, from_proxy, to_client):
         os.dup2(from_proxy, from_client)
         os.dup2(to_proxy, to_client)
-        os.execvp(command_line_arguments[0], command_line_arguments)
-
+        try:
+            os.execvp(command_line_arguments[0], command_line_arguments)
+        except OSError as o:
+            logger.logit(o.strerror)
 
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')

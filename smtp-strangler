@@ -4,11 +4,7 @@ import os, select, sys
 
 
 class SMTPStrangler:
-    def __init__(self, command_line_arguments):
-        logger = SMTPLogger()
-        if not command_line_arguments:
-            logger.die_usage()
-
+    def __init__(self, logger, command_line_arguments):
         (from_client, to_client) = (0, 1)
         (from_proxy, to_server) = os.pipe()
         (from_server, to_proxy) = os.pipe()
@@ -38,14 +34,6 @@ class SMTPLogger:
 
     def logit(self, message):
         os.write(self.fd, message + b'\n')
-
-    def die(self, message=b''):
-        self.logit(message)
-        sys.exit(1)
-
-    def die_usage(self):
-        this_program = os.path.basename(sys.argv[0]).encode('ASCII')
-        self.die(b'usage: ' + this_program + b' prog [ arg ... ]')
 
 
 class SMTPProxy:
@@ -129,8 +117,21 @@ class SMTPProxied:
         os.execvp(command_line_arguments[0], command_line_arguments)
 
 
+def die(logger, message=b''):
+    logger.logit(message)
+    sys.exit(1)
+
+
+def die_usage(logger):
+    this_program = os.path.basename(sys.argv[0]).encode('ASCII')
+    die(logger, b'usage: ' + this_program + b' prog [ arg ... ]')
+
+
 def main(command_line_arguments):
-    SMTPStrangler(command_line_arguments)
+    logger = SMTPLogger()
+    if not command_line_arguments:
+        die_usage(logger)
+    SMTPStrangler(logger, command_line_arguments)
 
 
 if '__main__' == __name__:

@@ -36,58 +36,6 @@ def log_server_disconnect():
     log_server_bytes(b'[dropped connection]')
 
 
-def handle_some_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
-    buffer_size = 77
-
-    some_bytes = os.read(from_fd, buffer_size)
-    if some_bytes:
-        log_bytes_fn(some_bytes)
-        os.write(to_fd, some_bytes)
-        return True
-    else:
-        log_disconnect_fn()
-        return False
-
-
-def readable_fds(of_these):
-    (readable, writable, exceptional) = select.select(of_these, [], [])
-    return readable
-
-
-def read_and_process_until_either_end_closes(from_client, to_server,
-                                             from_server, to_client):
-    handler_args_for = {
-        from_client: (
-            from_client,
-            to_server,
-            log_client_bytes,
-            log_client_disconnect,
-        ),
-        from_server: (
-            from_server,
-            to_client,
-            log_server_bytes,
-            log_server_disconnect,
-        ),
-    }
-
-    potentially_readable_fds = list(handler_args_for.keys())
-
-    is_open = True
-    while is_open:
-        for fd in readable_fds(potentially_readable_fds):
-            handler_args = handler_args_for[fd]
-            if not handle_some_bytes(*handler_args):
-                is_open = False
-
-
-def teardown_and_exit(child, from_server, to_server):
-    os.close(from_server)
-    os.close(to_server)
-    (pid, exitcode, resources) = os.wait4(child, 0)
-    sys.exit(exitcode)
-
-
 def fork_and_prep(from_proxy, to_server,
                   from_server, to_proxy):
     child = os.fork()
@@ -101,19 +49,68 @@ def fork_and_prep(from_proxy, to_server,
 
 
 class SMTPProxy:
-    def __init__(self,
-                 from_client, to_client,
-                 from_server, to_server,
-                 child):
-        read_and_process_until_either_end_closes(from_client, to_server,
-                                                 from_server, to_client)
-        teardown_and_exit(child, from_server, to_server)
+    def __init__(self, child, from_client, to_server, from_server, to_client):
+        self.child = child
+        self.from_client = from_client
+        self.to_server = to_server
+        self.from_server = from_server
+        self.to_client = to_client
+
+        self.read_and_process_until_either_end_closes()
+        self.teardown_and_exit()
+
+    @staticmethod
+    def handle_some_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
+        buffer_size = 77
+
+        some_bytes = os.read(from_fd, buffer_size)
+        if some_bytes:
+            log_bytes_fn(some_bytes)
+            os.write(to_fd, some_bytes)
+            return True
+        else:
+            log_disconnect_fn()
+            return False
+
+    @staticmethod
+    def readable_fds(of_these):
+        (readable, writable, exceptional) = select.select(of_these, [], [])
+        return readable
+
+    def read_and_process_until_either_end_closes(self):
+        handler_args_for = {
+            self.from_client: (
+                self.from_client,
+                self.to_server,
+                log_client_bytes,
+                log_client_disconnect,
+            ),
+            self.from_server: (
+                self.from_server,
+                self.to_client,
+                log_server_bytes,
+                log_server_disconnect,
+            ),
+        }
+
+        potentially_readable_fds = list(handler_args_for.keys())
+
+        is_open = True
+        while is_open:
+            for fd in self.readable_fds(potentially_readable_fds):
+                handler_args = handler_args_for[fd]
+                if not self.handle_some_bytes(*handler_args):
+                    is_open = False
+
+    def teardown_and_exit(self):
+        os.close(self.from_server)
+        os.close(self.to_server)
+        (pid, exitcode, resources) = os.wait4(self.child, 0)
+        sys.exit(exitcode)
 
 
 class SMTPProxied:
-    def __init__(self,
-                 from_proxy, to_proxy,
-                 args):
+    def __init__(self, args, from_proxy, to_proxy):
         os.dup2(from_proxy, 0)
         os.dup2(to_proxy, 1)
         os.execvp(args[0], args)
@@ -124,7 +121,6 @@ class SMTPStrangler:
         if not args:
             die_usage()
 
-        # XXX how can I split objects into SMTPProxy, SMTPProxied
         (from_client, to_client) = (0, 1)
         (from_proxy, to_server) = os.pipe()
         (from_server, to_proxy) = os.pipe()
@@ -132,12 +128,9 @@ class SMTPStrangler:
         child = fork_and_prep(from_proxy, to_server,
                               from_server, to_proxy)
         if child:
-            SMTPProxy(from_client, to_client,
-                      from_server, to_server,
-                      child)
+            SMTPProxy(child, from_client, to_server, from_server, to_client)
         else:
-            SMTPProxied(from_proxy, to_proxy,
-                        args)
+            SMTPProxied(args, from_proxy, to_proxy)
 
 
 def main(args):

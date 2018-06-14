@@ -1,32 +1,40 @@
 #!/usr/bin/env python
 
 import os
-import sys
 import select
+import sys
+
 
 def logit(message):
     os.write(2, message + b'\n')
     pass
 
-def die(message = b''):
+
+def die(message=b''):
     logit(message)
     sys.exit(1)
+
 
 def die_usage():
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
     die(b'usage: ' + this_program + b' prog [ arg ... ]')
 
+
 def log_client_bytes(message):
     logit(b'client< ' + message)
+
 
 def log_client_disconnect():
     log_client_bytes(b'[dropped connection]')
 
+
 def log_server_bytes(message):
     logit(b'server> ' + message)
 
+
 def log_server_disconnect():
     log_server_bytes(b'[dropped connection]')
+
 
 def handle_some_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
     buffer_size = 77
@@ -40,9 +48,11 @@ def handle_some_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
         log_disconnect_fn()
         return False
 
+
 def readable_fds(of_these):
     (readable, writable, exceptional) = select.select(of_these, [], [])
     return readable
+
 
 def read_and_process_until_either_end_closes(from_client, to_server,
                                              from_server, to_client):
@@ -70,14 +80,16 @@ def read_and_process_until_either_end_closes(from_client, to_server,
             if not handle_some_bytes(*handler_args):
                 is_open = False
 
+
 def teardown_and_exit(child, from_server, to_server):
     os.close(from_server)
     os.close(to_server)
     (pid, exitcode, resources) = os.wait4(child, 0)
     sys.exit(exitcode)
 
+
 def be_proxy(from_client, to_client,
-             from_proxy,  to_proxy,
+             from_proxy, to_proxy,
              from_server, to_server,
              child):
     os.close(from_proxy)
@@ -86,32 +98,34 @@ def be_proxy(from_client, to_client,
                                              from_server, to_client)
     teardown_and_exit(child, from_server, to_server)
 
-def be_proxied(from_proxy,  to_proxy,
+
+def be_proxied(from_proxy, to_proxy,
                from_server, to_server,
                args):
     os.close(from_server)
     os.close(to_server)
     os.dup2(from_proxy, 0)
-    os.dup2(to_proxy,   1)
+    os.dup2(to_proxy, 1)
     os.execvp(args[0], args)
-    die
+    die()
+
 
 def main(args):
     if not args:
         die_usage()
 
     (from_client, to_client) = (0, 1)
-    (from_proxy,  to_server) = os.pipe()
-    (from_server, to_proxy)  = os.pipe()
+    (from_proxy, to_server) = os.pipe()
+    (from_server, to_proxy) = os.pipe()
 
     child = os.fork()
     if child:
         be_proxy(from_client, to_client,
-                 from_proxy,  to_proxy,
+                 from_proxy, to_proxy,
                  from_server, to_server,
                  child)
     else:
-        be_proxied(from_proxy,  to_proxy,
+        be_proxied(from_proxy, to_proxy,
                    from_server, to_server,
                    args)
 

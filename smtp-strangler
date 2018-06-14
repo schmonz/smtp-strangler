@@ -5,40 +5,38 @@ import select
 import sys
 
 
-def logit(message):
-    os.write(2, message + b'\n')
-    pass
+class SMTPLogger:
+    def __init__(self):
+        self.fd = 2
 
+    def logit(self, message):
+        os.write(self.fd, message + b'\n')
 
-def die(message=b''):
-    logit(message)
-    sys.exit(1)
+    def die(self, message=b''):
+        self.logit(message)
+        sys.exit(1)
 
+    def die_usage(self):
+        this_program = os.path.basename(sys.argv[0]).encode('ASCII')
+        self.die(b'usage: ' + this_program + b' prog [ arg ... ]')
 
-def die_usage():
-    this_program = os.path.basename(sys.argv[0]).encode('ASCII')
-    die(b'usage: ' + this_program + b' prog [ arg ... ]')
+    def log_client_bytes(self, message):
+        self.logit(b'client< ' + message)
 
+    def log_client_disconnect(self):
+        self.log_client_bytes(b'[dropped connection]')
 
-def log_client_bytes(message):
-    logit(b'client< ' + message)
+    def log_server_bytes(self, message):
+        self.logit(b'server> ' + message)
 
-
-def log_client_disconnect():
-    log_client_bytes(b'[dropped connection]')
-
-
-def log_server_bytes(message):
-    logit(b'server> ' + message)
-
-
-def log_server_disconnect():
-    log_server_bytes(b'[dropped connection]')
+    def log_server_disconnect(self):
+        self.log_server_bytes(b'[dropped connection]')
 
 
 class SMTPProxy:
-    def __init__(self, child, from_client, to_server, from_server, to_client):
+    def __init__(self, child, logger, from_client, to_server, from_server, to_client):
         self.child = child
+        self.logger = logger
         self.from_client = from_client
         self.to_server = to_server
         self.from_server = from_server
@@ -70,14 +68,14 @@ class SMTPProxy:
             self.from_client: (
                 self.from_client,
                 self.to_server,
-                log_client_bytes,
-                log_client_disconnect,
+                self.logger.log_client_bytes,
+                self.logger.log_client_disconnect,
             ),
             self.from_server: (
                 self.from_server,
                 self.to_client,
-                log_server_bytes,
-                log_server_disconnect,
+                self.logger.log_server_bytes,
+                self.logger.log_server_disconnect,
             ),
         }
 
@@ -106,8 +104,9 @@ class SMTPProxied:
 
 class SMTPStrangler:
     def __init__(self, args):
+        logger = SMTPLogger()
         if not args:
-            die_usage()
+            logger.die_usage()
 
         (from_client, to_client) = (0, 1)
         (from_proxy, to_server) = os.pipe()
@@ -115,7 +114,7 @@ class SMTPStrangler:
 
         child = self.fork_and_prep(from_proxy, to_server, from_server, to_proxy)
         if child:
-            SMTPProxy(child, from_client, to_server, from_server, to_client)
+            SMTPProxy(child, logger, from_client, to_server, from_server, to_client)
         else:
             SMTPProxied(args, from_client, to_proxy, from_proxy, to_client)
 

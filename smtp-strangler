@@ -1,8 +1,35 @@
 #!/usr/bin/env python
 
-import os
-import select
-import sys
+import os, select, sys
+
+
+class SMTPStrangler:
+    def __init__(self, args):
+        logger = SMTPLogger()
+        if not args:
+            logger.die_usage()
+
+        (from_client, to_client) = (0, 1)
+        (from_proxy, to_server) = os.pipe()
+        (from_server, to_proxy) = os.pipe()
+
+        child = self.fork_and_prep(from_proxy, to_server, from_server, to_proxy)
+        if child:
+            SMTPProxy(child, logger, from_client, to_server, from_server, to_client)
+        else:
+            SMTPProxied(args, from_client, to_proxy, from_proxy, to_client)
+
+    @staticmethod
+    def fork_and_prep(from_proxy, to_server,
+                      from_server, to_proxy):
+        child = os.fork()
+        if child:
+            os.close(from_proxy)
+            os.close(to_proxy)
+        else:
+            os.close(from_server)
+            os.close(to_server)
+        return child
 
 
 class SMTPLogger:
@@ -100,35 +127,6 @@ class SMTPProxied:
         os.dup2(from_proxy, from_client)
         os.dup2(to_proxy, to_client)
         os.execvp(args[0], args)
-
-
-class SMTPStrangler:
-    def __init__(self, args):
-        logger = SMTPLogger()
-        if not args:
-            logger.die_usage()
-
-        (from_client, to_client) = (0, 1)
-        (from_proxy, to_server) = os.pipe()
-        (from_server, to_proxy) = os.pipe()
-
-        child = self.fork_and_prep(from_proxy, to_server, from_server, to_proxy)
-        if child:
-            SMTPProxy(child, logger, from_client, to_server, from_server, to_client)
-        else:
-            SMTPProxied(args, from_client, to_proxy, from_proxy, to_client)
-
-    @staticmethod
-    def fork_and_prep(from_proxy, to_server,
-                      from_server, to_proxy):
-        child = os.fork()
-        if child:
-            os.close(from_proxy)
-            os.close(to_proxy)
-        else:
-            os.close(from_server)
-            os.close(to_server)
-        return child
 
 
 def main(args):

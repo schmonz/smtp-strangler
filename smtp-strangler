@@ -53,6 +53,7 @@ class SMTPProxy:
         self.to_client = to_client
 
         self.client_buffer = b''
+        self.client_request = b''
         self.server_buffer = b''
         self.server_response = b''
 
@@ -69,9 +70,12 @@ class SMTPProxy:
     def log_client_request(self, message):
         self.client_buffer += message
         while '\n' in self.client_buffer:
-            (request, leftovers) = self.first_line_and_leftovers(self.client_buffer)
+            (request_line, leftovers) = self.first_line_and_leftovers(self.client_buffer)
             self.client_buffer = leftovers
-            self.logger.logit(b'client< ' + request)
+            self.client_request += request_line
+            if True:
+                self.logger.logit(b'client< ' + self.client_request)
+                self.client_request = b''
 
     @staticmethod
     def is_last_response_line(line):

@@ -10,7 +10,7 @@ class SMTPStrangler:
         self.logger = logger
         self.command_line_arguments = command_line_arguments
 
-        (self.from_client, self.to_client) = (0, 1)
+        (self.from_client, self.to_client) = (sys.stdin.fileno(), sys.stdout.fileno())
         (self.from_proxy, self.to_server) = os.pipe()
         (self.from_server, self.to_proxy) = os.pipe()
 

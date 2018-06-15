@@ -60,25 +60,32 @@ class SMTPProxy:
         self.read_and_process_until_either_end_closes()
         self.teardown_and_exit()
 
+    @staticmethod
+    def first_line_and_leftovers(possibly_multiline):
+        (first_line, leftovers) = str.split(possibly_multiline, '\n', 1)
+        first_line += '\n'
+        return (first_line, leftovers)
+
     def log_client_request(self, message):
         self.request_buffer += message
         while '\n' in self.request_buffer:
-            (request, leftovers) = str.split(self.request_buffer, '\n', 1)
-            self.logger.logit(b'client< ' + request)
+            (request, leftovers) = self.first_line_and_leftovers(self.request_buffer)
             self.request_buffer = leftovers
+            self.logger.logit(b'client< ' + request)
+
+    @staticmethod
+    def is_last_response_line(line):
+        return len(line) >= 4 and ' ' == line[3]
 
     def log_server_response(self, message):
         self.response_buffer += message
-        seen_last_line = False
-        while '\n' in self.response_buffer and not seen_last_line:
-            (response_line, leftovers) = str.split(self.response_buffer, '\n', 1)
-            if response_line[3] == ' ':
-                seen_last_line = True
-            self.response += response_line + '\n'
+        while '\n' in self.response_buffer:
+            (response_line, leftovers) = self.first_line_and_leftovers(self.response_buffer)
             self.response_buffer = leftovers
-        if seen_last_line:
-            self.logger.logit(b'server> ' + self.response)
-            self.response = ''
+            self.response += response_line
+            if self.is_last_response_line(response_line):
+                self.logger.logit(b'server> ' + self.response)
+                self.response = b''
 
     def log_client_disconnect(self):
         self.log_client_request(b'[dropped connection]')

@@ -18,7 +18,7 @@ class SMTPStrangler:
 
     def strangle(self):
         if self.child_process_id:
-            SMTPProxy(self.child_process_id, self.logger, self.from_client, self.to_server, self.from_server, self.to_client)
+            SMTPProxy(self.child_process_id, self.logger, self.from_client, self.to_server, self.from_server, self.to_client).proxy()
         else:
             SMTPProxied(self.command_line_arguments, self.logger, self.from_client, self.to_proxy, self.from_proxy, self.to_client)
 
@@ -52,6 +52,7 @@ class SMTPProxy:
         self.from_server = from_server
         self.to_client = to_client
 
+    def proxy(self):
         self.read_and_process_until_either_end_closes()
         self.teardown_and_exit()
 

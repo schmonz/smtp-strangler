@@ -7,15 +7,20 @@ import sys
 
 class SMTPStrangler:
     def __init__(self, logger, command_line_arguments):
-        (from_client, to_client) = (0, 1)
-        (from_proxy, to_server) = os.pipe()
-        (from_server, to_proxy) = os.pipe()
+        self.logger = logger
+        self.command_line_arguments = command_line_arguments
 
-        child_process_id = self.fork_and_prep(from_proxy, to_server, from_server, to_proxy)
-        if child_process_id:
-            SMTPProxy(child_process_id, logger, from_client, to_server, from_server, to_client)
+        (self.from_client, self.to_client) = (0, 1)
+        (self.from_proxy, self.to_server) = os.pipe()
+        (self.from_server, self.to_proxy) = os.pipe()
+
+        self.child_process_id = self.fork_and_prep(self.from_proxy, self.to_server, self.from_server, self.to_proxy)
+
+    def strangle(self):
+        if self.child_process_id:
+            SMTPProxy(self.child_process_id, self.logger, self.from_client, self.to_server, self.from_server, self.to_client)
         else:
-            SMTPProxied(command_line_arguments, logger, from_client, to_proxy, from_proxy, to_client)
+            SMTPProxied(self.command_line_arguments, self.logger, self.from_client, self.to_proxy, self.from_proxy, self.to_client)
 
     @staticmethod
     def fork_and_prep(from_proxy, to_server,
@@ -121,6 +126,7 @@ class SMTPProxied:
         except OSError as o:
             logger.logit(o.strerror)
 
+
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
     logger.logit(b'usage: ' + this_program + b' prog [ arg ... ]')
@@ -131,7 +137,7 @@ def main(command_line_arguments):
     logger = SMTPLogger()
     if not command_line_arguments:
         die_usage(logger)
-    SMTPStrangler(logger, command_line_arguments)
+    SMTPStrangler(logger, command_line_arguments).strangle()
 
 
 if '__main__' == __name__:

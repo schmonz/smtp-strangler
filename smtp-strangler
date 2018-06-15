@@ -52,15 +52,33 @@ class SMTPProxy:
         self.from_server = from_server
         self.to_client = to_client
 
+        self.request_buffer = b''
+        self.response_buffer = b''
+        self.response = b''
+
     def proxy(self):
         self.read_and_process_until_either_end_closes()
         self.teardown_and_exit()
 
     def log_client_bytes(self, message):
-        self.logger.logit(b'client< ' + message)
+        self.request_buffer += message
+        while '\n' in self.request_buffer:
+            (request, leftovers) = str.split(self.request_buffer, '\n', 1)
+            self.logger.logit(b'client< ' + request)
+            self.request_buffer = leftovers
 
     def log_server_bytes(self, message):
-        self.logger.logit(b'server> ' + message)
+        self.response_buffer += message
+        seen_last_line = False
+        while '\n' in self.response_buffer and not seen_last_line:
+            (response_line, leftovers) = str.split(self.response_buffer, '\n', 1)
+            if response_line[3] == ' ':
+                seen_last_line = True
+            self.response += response_line + '\n'
+            self.response_buffer = leftovers
+        if seen_last_line:
+            self.logger.logit(b'server> ' + self.response)
+            self.response = ''
 
     def log_client_disconnect(self):
         self.log_client_bytes(b'[dropped connection]')

@@ -43,6 +43,50 @@ class SMTPLogger:
         os.write(self.fd, message + b'\n')
 
 
+class AbstractSMTPBuffer:
+    def __init__(self, logger):
+        self.logger = logger
+
+        self.buffer = b''
+        self.protocol_message = b''
+
+    @staticmethod
+    def first_line_and_leftovers(possibly_multiline):
+        (first_line, leftovers) = str.split(possibly_multiline, '\n', 1)
+        first_line += '\n'
+        return (first_line, leftovers)
+
+    def process_bytes(self, some_bytes):
+        self.buffer += some_bytes
+        while '\n' in self.buffer:
+            (line, leftovers) = self.first_line_and_leftovers(self.buffer)
+            self.buffer = leftovers
+            self.protocol_message += line
+            if self.is_last_line_of_protocol_message(line):
+                self.logger.logit(self.get_log_prefix() + b' ' + self.protocol_message)
+                self.protocol_message = b''
+
+
+class SMTPRequestBuffer(AbstractSMTPBuffer):
+    @staticmethod
+    def is_last_line_of_protocol_message(line):
+        return True
+
+    @staticmethod
+    def get_log_prefix():
+        return b'request>'
+
+
+class SMTPResponseBuffer(AbstractSMTPBuffer):
+    @staticmethod
+    def is_last_line_of_protocol_message(line):
+        return len(line) >= 4 and ' ' == line[3]
+
+    @staticmethod
+    def get_log_prefix():
+        return b'response<'
+
+
 class SMTPProxy:
     def __init__(self, child, logger, from_client, to_server, from_server, to_client):
         self.child = child
@@ -52,58 +96,26 @@ class SMTPProxy:
         self.from_server = from_server
         self.to_client = to_client
 
-        self.client_buffer = b''
-        self.client_request = b''
-        self.server_buffer = b''
-        self.server_response = b''
+        self.request_buffer = SMTPRequestBuffer(self.logger)
+        self.response_buffer = SMTPResponseBuffer(self.logger)
 
     def proxy(self):
         self.read_and_process_until_either_end_closes()
         self.teardown_and_exit()
 
-    @staticmethod
-    def first_line_and_leftovers(possibly_multiline):
-        (first_line, leftovers) = str.split(possibly_multiline, '\n', 1)
-        first_line += '\n'
-        return (first_line, leftovers)
-
-    def log_client_request(self, some_bytes):
-        self.client_buffer += some_bytes
-        while '\n' in self.client_buffer:
-            (line, leftovers) = self.first_line_and_leftovers(self.client_buffer)
-            self.client_buffer = leftovers
-            self.client_request += line
-            if True:
-                self.logger.logit(b'client< ' + self.client_request)
-                self.client_request = b''
-
-    @staticmethod
-    def is_last_response_line(line):
-        return len(line) >= 4 and ' ' == line[3]
-
-    def log_server_response(self, some_bytes):
-        self.server_buffer += some_bytes
-        while '\n' in self.server_buffer:
-            (line, leftovers) = self.first_line_and_leftovers(self.server_buffer)
-            self.server_buffer = leftovers
-            self.server_response += line
-            if self.is_last_response_line(line):
-                self.logger.logit(b'server> ' + self.server_response)
-                self.server_response = b''
-
     def log_client_disconnect(self):
-        self.log_client_request(b'[dropped connection]')
+        self.logger.logit(b'[client dropped connection]')
 
     def log_server_disconnect(self):
-        self.log_server_response(b'[dropped connection]')
+        self.logger.logit(b'[server dropped connection]')
 
     @staticmethod
-    def handle_some_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
+    def process_some_bytes(from_fd, to_fd, process_bytes_fn, log_disconnect_fn):
         buffer_size = 77
 
         some_bytes = os.read(from_fd, buffer_size)
         if some_bytes:
-            log_bytes_fn(some_bytes)
+            process_bytes_fn(some_bytes)
             os.write(to_fd, some_bytes)
             return True
         else:
@@ -120,13 +132,13 @@ class SMTPProxy:
             self.from_client: (
                 self.from_client,
                 self.to_server,
-                self.log_client_request,
+                self.request_buffer.process_bytes,
                 self.log_client_disconnect,
             ),
             self.from_server: (
                 self.from_server,
                 self.to_client,
-                self.log_server_response,
+                self.response_buffer.process_bytes,
                 self.log_server_disconnect,
             ),
         }
@@ -137,7 +149,7 @@ class SMTPProxy:
         while is_open:
             for fd in self.readable_fds(potentially_readable_fds):
                 handler_args = handler_args_for[fd]
-                if not self.handle_some_bytes(*handler_args):
+                if not self.process_some_bytes(*handler_args):
                     is_open = False
 
     def teardown_and_exit(self):

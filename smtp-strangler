@@ -67,8 +67,8 @@ class SMTPProxy:
         first_line += '\n'
         return (first_line, leftovers)
 
-    def log_client_request(self, message):
-        self.client_buffer += message
+    def log_client_request(self, some_bytes):
+        self.client_buffer += some_bytes
         while '\n' in self.client_buffer:
             (line, leftovers) = self.first_line_and_leftovers(self.client_buffer)
             self.client_buffer = leftovers
@@ -81,8 +81,8 @@ class SMTPProxy:
     def is_last_response_line(line):
         return len(line) >= 4 and ' ' == line[3]
 
-    def log_server_response(self, message):
-        self.server_buffer += message
+    def log_server_response(self, some_bytes):
+        self.server_buffer += some_bytes
         while '\n' in self.server_buffer:
             (line, leftovers) = self.first_line_and_leftovers(self.server_buffer)
             self.server_buffer = leftovers

@@ -60,14 +60,14 @@ class SMTPProxy:
         self.read_and_process_until_either_end_closes()
         self.teardown_and_exit()
 
-    def log_client_bytes(self, message):
+    def log_client_request(self, message):
         self.request_buffer += message
         while '\n' in self.request_buffer:
             (request, leftovers) = str.split(self.request_buffer, '\n', 1)
             self.logger.logit(b'client< ' + request)
             self.request_buffer = leftovers
 
-    def log_server_bytes(self, message):
+    def log_server_response(self, message):
         self.response_buffer += message
         seen_last_line = False
         while '\n' in self.response_buffer and not seen_last_line:
@@ -81,10 +81,10 @@ class SMTPProxy:
             self.response = ''
 
     def log_client_disconnect(self):
-        self.log_client_bytes(b'[dropped connection]')
+        self.log_client_request(b'[dropped connection]')
 
     def log_server_disconnect(self):
-        self.log_server_bytes(b'[dropped connection]')
+        self.log_server_response(b'[dropped connection]')
 
     @staticmethod
     def handle_some_bytes(from_fd, to_fd, log_bytes_fn, log_disconnect_fn):
@@ -109,13 +109,13 @@ class SMTPProxy:
             self.from_client: (
                 self.from_client,
                 self.to_server,
-                self.log_client_bytes,
+                self.log_client_request,
                 self.log_client_disconnect,
             ),
             self.from_server: (
                 self.from_server,
                 self.to_client,
-                self.log_server_bytes,
+                self.log_server_response,
                 self.log_server_disconnect,
             ),
         }

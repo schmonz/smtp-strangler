@@ -5,7 +5,7 @@ import select
 import sys
 
 
-class SMTPStrangler:
+class ProtocolStrangler:
     def __init__(self, logger, command_line_arguments):
         self.logger = logger
         self.command_line_arguments = command_line_arguments
@@ -18,9 +18,9 @@ class SMTPStrangler:
 
     def strangle(self):
         if self.child_process_id:
-            SMTPProxy(self.child_process_id, self.logger, self.from_client, self.to_server, self.from_server, self.to_client).proxy()
+            ProtocolProxy(self.child_process_id, self.logger, self.from_client, self.to_server, self.from_server, self.to_client).proxy()
         else:
-            SMTPProxied(self.command_line_arguments, self.logger, self.from_client, self.to_proxy, self.from_proxy, self.to_client).run()
+            ProtocolProxied(self.command_line_arguments, self.logger, self.from_client, self.to_proxy, self.from_proxy, self.to_client).run()
 
     @staticmethod
     def fork_and_prep(from_proxy, to_server,
@@ -35,7 +35,7 @@ class SMTPStrangler:
         return child
 
 
-class SMTPLogger:
+class ProtocolLogger:
     def __init__(self):
         self.fd = 2
 
@@ -43,7 +43,7 @@ class SMTPLogger:
         os.write(self.fd, message + b'\n')
 
 
-class AbstractSMTPBuffer:
+class AbstractProtocolMessage:
     def __init__(self, logger):
         self.logger = logger
 
@@ -67,7 +67,7 @@ class AbstractSMTPBuffer:
                 self.protocol_message = b''
 
 
-class SMTPRequestBuffer(AbstractSMTPBuffer):
+class SMTPRequestBuffer(AbstractProtocolMessage):
     @staticmethod
     def is_last_line_of_protocol_message(line):
         return True
@@ -77,7 +77,7 @@ class SMTPRequestBuffer(AbstractSMTPBuffer):
         return b'request>'
 
 
-class SMTPResponseBuffer(AbstractSMTPBuffer):
+class SMTPResponseBuffer(AbstractProtocolMessage):
     @staticmethod
     def is_last_line_of_protocol_message(line):
         return len(line) >= 4 and ' ' == line[3]
@@ -87,7 +87,7 @@ class SMTPResponseBuffer(AbstractSMTPBuffer):
         return b'response<'
 
 
-class SMTPProxy:
+class ProtocolProxy:
     def __init__(self, child, logger, from_client, to_server, from_server, to_client):
         self.child = child
         self.logger = logger
@@ -159,7 +159,7 @@ class SMTPProxy:
         sys.exit(exitcode)
 
 
-class SMTPProxied:
+class ProtocolProxied:
     def __init__(self, command_line_arguments, logger, from_client, to_proxy, from_proxy, to_client):
         self.command_line_arguments = command_line_arguments
         self.logger = logger
@@ -181,10 +181,10 @@ def die_usage(logger):
 
 
 def main(command_line_arguments):
-    logger = SMTPLogger()
+    logger = ProtocolLogger()
     if not command_line_arguments:
         die_usage(logger)
-    SMTPStrangler(logger, command_line_arguments).strangle()
+    ProtocolStrangler(logger, command_line_arguments).strangle()
 
 
 if '__main__' == __name__:

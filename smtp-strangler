@@ -18,9 +18,9 @@ class ProtocolStrangler:
 
     def strangle(self):
         if self.child_process_id:
-            request_buffer = SMTPRequestBuffer(self.logger)
-            response_buffer = SMTPResponseBuffer(self.logger)
-            ProtocolProxy(self.child_process_id, request_buffer, response_buffer, self.from_client, self.to_server, self.from_server, self.to_client).proxy()
+            request_buffer = SMTPRequestBuffer(self.logger, self.from_client, self.to_server)
+            response_buffer = SMTPResponseBuffer(self.logger, self.from_server, self.to_client)
+            ProtocolProxy(self.child_process_id, request_buffer, response_buffer).proxy()
         else:
             ProtocolProxied(self.command_line_arguments, self.logger, self.from_client, self.to_proxy, self.from_proxy, self.to_client).run()
 
@@ -46,8 +46,10 @@ class ProtocolLogger:
 
 
 class AbstractProtocolMessage:
-    def __init__(self, logger):
+    def __init__(self, logger, read_from_fd, write_to_fd):
         self.logger = logger
+        self.read_from_fd = read_from_fd
+        self.write_to_fd = write_to_fd
 
         self.buffer = b''
         self.protocol_message = b''
@@ -96,13 +98,8 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
 
 
 class ProtocolProxy:
-    def __init__(self, child, request_buffer, response_buffer, from_client, to_server, from_server, to_client):
+    def __init__(self, child, request_buffer, response_buffer):
         self.child = child
-        self.from_client = from_client
-        self.to_server = to_server
-        self.from_server = from_server
-        self.to_client = to_client
-
         self.request_buffer = request_buffer
         self.response_buffer = response_buffer
 
@@ -130,15 +127,15 @@ class ProtocolProxy:
 
     def read_and_process_until_either_end_closes(self):
         handler_args_for = {
-            self.from_client: (
-                self.from_client,
-                self.to_server,
+            self.request_buffer.read_from_fd: (
+                self.request_buffer.read_from_fd,
+                self.request_buffer.write_to_fd,
                 self.request_buffer.process_bytes,
                 self.request_buffer.log_disconnect,
             ),
-            self.from_server: (
-                self.from_server,
-                self.to_client,
+            self.response_buffer.read_from_fd: (
+                self.response_buffer.read_from_fd,
+                self.response_buffer.write_to_fd,
                 self.response_buffer.process_bytes,
                 self.response_buffer.log_disconnect,
             ),
@@ -154,8 +151,8 @@ class ProtocolProxy:
                     is_open = False
 
     def teardown_and_exit(self):
-        os.close(self.from_server)
-        os.close(self.to_server)
+        os.close(self.response_buffer.read_from_fd)
+        os.close(self.request_buffer.write_to_fd)
         (pid, exitcode, resources) = os.wait4(self.child, 0)
         sys.exit(exitcode)
 

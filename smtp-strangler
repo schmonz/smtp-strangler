@@ -70,6 +70,18 @@ class AbstractProtocolMessage:
                 self.logger.logit(self.get_log_prefix() + b' ' + self.protocol_message)
                 self.protocol_message = b''
 
+    def proxy_more_stuff(self):
+        buffer_size = 77
+
+        some_bytes = os.read(self.read_from_fd, buffer_size)
+        if some_bytes:
+            self.process_bytes(some_bytes)
+            os.write(self.write_to_fd, some_bytes)
+            return True
+        else:
+            self.log_disconnect()
+            return False
+
 
 class SMTPRequestBuffer(AbstractProtocolMessage):
     @staticmethod
@@ -107,7 +119,7 @@ class ProtocolProxy:
         is_open = True
         while is_open:
             for message_buffer in self.readable_buffers(self.request_buffer, self.response_buffer):
-                if not self.process_some_bytes(message_buffer):
+                if not message_buffer.proxy_more_stuff():
                     is_open = False
 
         os.close(self.response_buffer.read_from_fd)
@@ -125,19 +137,6 @@ class ProtocolProxy:
         if two.read_from_fd in readable_fds:
             readables.append(two)
         return readables
-
-    @staticmethod
-    def process_some_bytes(message_buffer):
-        buffer_size = 77
-
-        some_bytes = os.read(message_buffer.read_from_fd, buffer_size)
-        if some_bytes:
-            message_buffer.process_bytes(some_bytes)
-            os.write(message_buffer.write_to_fd, some_bytes)
-            return True
-        else:
-            message_buffer.log_disconnect()
-            return False
 
 
 class ProtocolProxied:

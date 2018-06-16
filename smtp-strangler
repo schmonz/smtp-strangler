@@ -22,7 +22,8 @@ class ProtocolStrangler:
             response_buffer = SMTPResponseBuffer(self.__logger, self.from_server, self.to_client)
             ProtocolProxy(self.child_process_id, request_buffer, response_buffer).proxy()
         else:
-            ProtocolProxied(self.__command_line_arguments, self.__logger, self.from_client, self.to_proxy, self.from_proxy, self.to_client).run()
+            proxied = ProtocolProxied(self.from_client, self.to_proxy, self.from_proxy, self.to_client)
+            proxied.run(self.__logger, self.__command_line_arguments)
 
     @staticmethod
     def __fork_and_prep(from_proxy, to_server,
@@ -162,18 +163,15 @@ class ProtocolProxy:
 
 
 class ProtocolProxied:
-    def __init__(self, command_line_arguments, logger, from_client, to_proxy, from_proxy, to_client):
-        self.__command_line_arguments = command_line_arguments
-        self.__logger = logger
-
+    def __init__(self, from_client, to_proxy, from_proxy, to_client):
         os.dup2(from_proxy, from_client)
         os.dup2(to_proxy, to_client)
 
-    def run(self):
+    def run(self, logger, command_line_arguments):
         try:
-            os.execvp(self.__command_line_arguments[0], self.__command_line_arguments)
+            os.execvp(command_line_arguments[0], command_line_arguments)
         except OSError as o:
-            self.__logger.logit(o.strerror)
+            logger.logit(o.strerror)
 
 
 def die_usage(logger):

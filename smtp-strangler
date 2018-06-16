@@ -6,24 +6,21 @@ import sys
 
 
 class ProtocolStrangler:
-    def __init__(self, logger, command_line_arguments):
-        self.__logger = logger
-        self.__command_line_arguments = command_line_arguments
-
-        (self.from_client, self.to_client) = (sys.stdin.fileno(), sys.stdout.fileno())
+    def __init__(self, from_client, to_client):
+        (self.from_client, self.to_client) = (from_client, to_client)
         (self.from_proxy, self.to_server) = os.pipe()
         (self.from_server, self.to_proxy) = os.pipe()
-
         self.child_process_id = self.__fork_and_prep(self.from_proxy, self.to_server, self.from_server, self.to_proxy)
 
-    def strangle(self):
+    def go(self, logger, command_line_arguments):
         if self.child_process_id:
-            request_buffer = SMTPRequestBuffer(self.__logger, self.from_client, self.to_server)
-            response_buffer = SMTPResponseBuffer(self.__logger, self.from_server, self.to_client)
-            ProtocolProxy(self.child_process_id, request_buffer, response_buffer).proxy()
+            request_buffer = SMTPRequestBuffer(logger, self.from_client, self.to_server)
+            response_buffer = SMTPResponseBuffer(logger, self.from_server, self.to_client)
+            proxy = ProtocolProxy(request_buffer, response_buffer)
+            proxy.go(self.child_process_id, 77)
         else:
             proxied = ProtocolProxied(self.from_client, self.to_proxy, self.from_proxy, self.to_client)
-            proxied.run(self.__logger, self.__command_line_arguments)
+            proxied.go(logger, command_line_arguments)
 
     @staticmethod
     def __fork_and_prep(from_proxy, to_server,
@@ -39,8 +36,8 @@ class ProtocolStrangler:
 
 
 class ProtocolLogger:
-    def __init__(self):
-        self.__fd = 2
+    def __init__(self, fd):
+        self.__fd = fd
 
     def logit(self, message):
         os.write(self.__fd, message + b'\n')
@@ -97,10 +94,8 @@ class AbstractProtocolMessage:
     def get_write_fd(self):
         return self.__write_to_fd
 
-    def proxy_more_stuff(self):
-        buffer_size = 77
-
-        some_bytes = os.read(self.__read_from_fd, buffer_size)
+    def go(self, read_length):
+        some_bytes = os.read(self.__read_from_fd, read_length)
         if some_bytes:
             self.__process_bytes(some_bytes)
             os.write(self.__write_to_fd, some_bytes)
@@ -143,23 +138,23 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
 
 
 class ProtocolProxy:
-    def __init__(self, child, request_buffer, response_buffer):
-        self.__child = child
-        self.__protocol_buffers = ProtocolBuffers(request_buffer, response_buffer)
+    def __init__(self, request_buffer, response_buffer):
+        self.__buffers = ProtocolBuffers(request_buffer, response_buffer)
 
-    def proxy(self):
+    @staticmethod
+    def __await_child_exitcode(child):
+        (pid, exitcode, resources) = os.wait4(child, 0)
+        return exitcode
+
+    def go(self, child, read_length):
         is_open = True
         while is_open:
-            for message_buffer in self.__protocol_buffers.get_readables():
-                if not message_buffer.proxy_more_stuff():
+            for readable in self.__buffers.get_readables():
+                if not readable.go(read_length):
                     is_open = False
 
-        self.__protocol_buffers.close()
-        sys.exit(self.__get_child_exitcode())
-
-    def __get_child_exitcode(self):
-        (pid, exitcode, resources) = os.wait4(self.__child, 0)
-        return exitcode
+        self.__buffers.close()
+        sys.exit(self.__await_child_exitcode(child))
 
 
 class ProtocolProxied:
@@ -167,7 +162,7 @@ class ProtocolProxied:
         os.dup2(from_proxy, from_client)
         os.dup2(to_proxy, to_client)
 
-    def run(self, logger, command_line_arguments):
+    def go(self, logger, command_line_arguments):
         try:
             os.execvp(command_line_arguments[0], command_line_arguments)
         except OSError as o:
@@ -181,10 +176,11 @@ def die_usage(logger):
 
 
 def main(command_line_arguments):
-    logger = ProtocolLogger()
+    logger = ProtocolLogger(sys.stderr.fileno())
     if not command_line_arguments:
         die_usage(logger)
-    ProtocolStrangler(logger, command_line_arguments).strangle()
+    strangler = ProtocolStrangler(sys.stdin.fileno(), sys.stdout.fileno())
+    strangler.go(logger, command_line_arguments)
 
 
 if '__main__' == __name__:

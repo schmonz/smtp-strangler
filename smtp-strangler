@@ -44,22 +44,22 @@ class ProtocolLogger:
 
 
 class ProtocolBuffers:
-    def __init__(self, one_buffer, another_buffer):
-        self.__one_buffer = one_buffer
-        self.__another_buffer = another_buffer
+    def __init__(self, list_of_buffers):
+        self.__list_of_buffers = list_of_buffers
+        self.__list_of_fds = []
+        for each_buffer in self.__list_of_buffers:
+            self.__list_of_fds.append(each_buffer.get_read_fd())
 
     def close(self):
-        self.__one_buffer.close()
-        self.__another_buffer.close()
+        for each_buffer in self.__list_of_buffers:
+            each_buffer.close()
 
     def get_readables(self):
+        (readable_fds, writable_fds, exceptional_fds) = select.select(self.__list_of_fds, [], [])
         readables = []
-        of_these = (self.__one_buffer.get_read_fd(), self.__another_buffer.get_read_fd())
-        (readable_fds, writable_fds, exceptional_fds) = select.select(of_these, [], [])
-        if self.__one_buffer.get_read_fd() in readable_fds:
-            readables.append(self.__one_buffer)
-        if self.__another_buffer.get_read_fd() in readable_fds:
-            readables.append(self.__another_buffer)
+        for each_buffer in self.__list_of_buffers:
+            if each_buffer.get_read_fd() in readable_fds:
+                readables.append(each_buffer)
         return readables
 
 
@@ -139,7 +139,7 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
 
 class ProtocolProxy:
     def __init__(self, request_buffer, response_buffer):
-        self.__buffers = ProtocolBuffers(request_buffer, response_buffer)
+        self.__buffers = ProtocolBuffers([request_buffer, response_buffer])
 
     @staticmethod
     def __await_child_exitcode(child):

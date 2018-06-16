@@ -117,7 +117,7 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
 
 class ProtocolProxy:
     def __init__(self, child, request_buffer, response_buffer):
-        self.child = child
+        self.__child = child
         self.__request_buffer = request_buffer
         self.__response_buffer = response_buffer
 
@@ -130,7 +130,7 @@ class ProtocolProxy:
 
         self.__request_buffer.close()
         self.__response_buffer.close()
-        (pid, exitcode, resources) = os.wait4(self.child, 0)
+        (pid, exitcode, resources) = os.wait4(self.__child, 0)
         sys.exit(exitcode)
 
     @staticmethod

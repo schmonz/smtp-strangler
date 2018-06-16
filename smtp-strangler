@@ -86,6 +86,7 @@ class AbstractProtocolMessage:
             self.__protocol_message += line
             if self.is_last_line_of_protocol_message(line):
                 self.logger.logit(self.get_log_prefix() + b' ' + self.__protocol_message)
+                os.write(self.__write_to_fd, self.__protocol_message)
                 self.__protocol_message = b''
 
     def get_read_fd(self):
@@ -98,7 +99,6 @@ class AbstractProtocolMessage:
         some_bytes = os.read(self.__read_from_fd, read_length)
         if some_bytes:
             self.__process_bytes(some_bytes)
-            os.write(self.__write_to_fd, some_bytes)
             return True
         else:
             self.log_disconnect()

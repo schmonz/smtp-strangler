@@ -40,7 +40,7 @@ class ProtocolLogger:
         self.__fd = fd
 
     def logit(self, message):
-        os.write(self.__fd, message + b'\n')
+        os.write(self.__fd, message)
 
 
 class ProtocolBuffers:
@@ -86,7 +86,9 @@ class AbstractProtocolMessage:
             self.__protocol_message += line
             if self.is_last_line_of_protocol_message(line):
                 self.logger.logit(self.get_log_prefix() + b' ' + self.__protocol_message)
-                os.write(self.__write_to_fd, self.__protocol_message)
+                munged_message = self.munge_message(self.__protocol_message)
+                self.logger.logit(b'munged-' + self.get_log_prefix() + b' ' + munged_message + '\n')
+                os.write(self.__write_to_fd, munged_message)
                 self.__protocol_message = b''
 
     def get_read_fd(self):
@@ -118,7 +120,15 @@ class SMTPRequestBuffer(AbstractProtocolMessage):
         return b'request>'
 
     def log_disconnect(self):
-        self.logger.logit(b'[client dropped connection]')
+        self.logger.logit(b'[client dropped connection]\n')
+
+    @staticmethod
+    def munge_message(message):
+        munged_message = message.rstrip('\r\n')
+        if munged_message.startswith('word '): # XXX case-insensitive please
+            munged_message = 'noop ' + munged_message
+        munged_message += '\r\n'
+        return munged_message
 
 
 class SMTPResponseBuffer(AbstractProtocolMessage):
@@ -134,7 +144,11 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
         return b'response<'
 
     def log_disconnect(self):
-        self.logger.logit(b'[server dropped connection]')
+        self.logger.logit(b'[server dropped connection]\n')
+
+    @staticmethod
+    def munge_message(message):
+        return message
 
 
 class ProtocolProxy:
@@ -166,12 +180,12 @@ class ProtocolProxied:
         try:
             os.execvp(command_line_arguments[0], command_line_arguments)
         except OSError as o:
-            logger.logit(o.strerror)
+            logger.logit(o.strerror + '\n')
 
 
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
-    logger.logit(b'usage: ' + this_program + b' program-to-strangle [ arg ... ]')
+    logger.logit(b'usage: ' + this_program + b' program-to-strangle [ arg ... ]\n')
     sys.exit(99)
 
 

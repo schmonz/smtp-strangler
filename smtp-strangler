@@ -147,11 +147,11 @@ class ProtocolProxy:
         return exitcode
 
     def go(self, child, read_length):
-        is_open = True
-        while is_open:
+        someone_closed = False
+        while not someone_closed:
             for readable in self.__buffers.get_readables():
                 if not readable.go(read_length):
-                    is_open = False
+                    someone_closed = True
 
         self.__buffers.close()
         sys.exit(self.__await_child_exitcode(child))

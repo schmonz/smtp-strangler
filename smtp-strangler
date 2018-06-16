@@ -122,20 +122,20 @@ class ProtocolProxy:
         is_open = True
         while is_open:
             for message_buffer in self.readable_buffers(self.request_buffer, self.response_buffer):
-                if not self.process_some_bytes(message_buffer.read_from_fd, message_buffer.write_to_fd, message_buffer.process_bytes, message_buffer.log_disconnect):
+                if not self.process_some_bytes(message_buffer):
                     is_open = False
 
     @staticmethod
-    def process_some_bytes(from_fd, to_fd, process_bytes_fn, log_disconnect_fn):
+    def process_some_bytes(message_buffer):
         buffer_size = 77
 
-        some_bytes = os.read(from_fd, buffer_size)
+        some_bytes = os.read(message_buffer.read_from_fd, buffer_size)
         if some_bytes:
-            process_bytes_fn(some_bytes)
-            os.write(to_fd, some_bytes)
+            message_buffer.process_bytes(some_bytes)
+            os.write(message_buffer.write_to_fd, some_bytes)
             return True
         else:
-            log_disconnect_fn()
+            message_buffer.log_disconnect()
             return False
 
     def teardown_and_exit(self):

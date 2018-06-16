@@ -104,8 +104,16 @@ class ProtocolProxy:
         self.response_buffer = response_buffer
 
     def proxy(self):
-        self.read_and_process_until_either_end_closes()
-        self.teardown_and_exit()
+        is_open = True
+        while is_open:
+            for message_buffer in self.readable_buffers(self.request_buffer, self.response_buffer):
+                if not self.process_some_bytes(message_buffer):
+                    is_open = False
+
+        os.close(self.response_buffer.read_from_fd)
+        os.close(self.request_buffer.write_to_fd)
+        (pid, exitcode, resources) = os.wait4(self.child, 0)
+        sys.exit(exitcode)
 
     @staticmethod
     def readable_buffers(one, two):
@@ -117,13 +125,6 @@ class ProtocolProxy:
         if two.read_from_fd in readable_fds:
             readables.append(two)
         return readables
-
-    def read_and_process_until_either_end_closes(self):
-        is_open = True
-        while is_open:
-            for message_buffer in self.readable_buffers(self.request_buffer, self.response_buffer):
-                if not self.process_some_bytes(message_buffer):
-                    is_open = False
 
     @staticmethod
     def process_some_bytes(message_buffer):
@@ -137,12 +138,6 @@ class ProtocolProxy:
         else:
             message_buffer.log_disconnect()
             return False
-
-    def teardown_and_exit(self):
-        os.close(self.response_buffer.read_from_fd)
-        os.close(self.request_buffer.write_to_fd)
-        (pid, exitcode, resources) = os.wait4(self.child, 0)
-        sys.exit(exitcode)
 
 
 class ProtocolProxied:

@@ -45,11 +45,31 @@ class ProtocolLogger:
         os.write(self.__fd, message + b'\n')
 
 
+class ProtocolBuffers:
+    def __init__(self, one_buffer, another_buffer):
+        self.__one_buffer = one_buffer
+        self.__another_buffer = another_buffer
+
+    def close(self):
+        self.__one_buffer.close()
+        self.__another_buffer.close()
+
+    def get_readables(self):
+        readables = []
+        of_these = (self.__one_buffer.get_read_fd(), self.__another_buffer.get_read_fd())
+        (readable_fds, writable_fds, exceptional_fds) = select.select(of_these, [], [])
+        if self.__one_buffer.get_read_fd() in readable_fds:
+            readables.append(self.__one_buffer)
+        if self.__another_buffer.get_read_fd() in readable_fds:
+            readables.append(self.__another_buffer)
+        return readables
+
+
 class AbstractProtocolMessage:
     def __init__(self, logger, read_from_fd, write_to_fd):
         self.logger = logger
-        self.read_from_fd = read_from_fd
-        self.write_to_fd = write_to_fd
+        self.__read_from_fd = read_from_fd
+        self.__write_to_fd = write_to_fd
 
         self.__buffer = b''
         self.__protocol_message = b''
@@ -70,13 +90,19 @@ class AbstractProtocolMessage:
                 self.logger.logit(self.get_log_prefix() + b' ' + self.__protocol_message)
                 self.__protocol_message = b''
 
+    def get_read_fd(self):
+        return self.__read_from_fd
+
+    def get_write_fd(self):
+        return self.__write_to_fd
+
     def proxy_more_stuff(self):
         buffer_size = 77
 
-        some_bytes = os.read(self.read_from_fd, buffer_size)
+        some_bytes = os.read(self.__read_from_fd, buffer_size)
         if some_bytes:
             self.__process_bytes(some_bytes)
-            os.write(self.write_to_fd, some_bytes)
+            os.write(self.__write_to_fd, some_bytes)
             return True
         else:
             self.log_disconnect()
@@ -85,7 +111,7 @@ class AbstractProtocolMessage:
 
 class SMTPRequestBuffer(AbstractProtocolMessage):
     def close(self):
-        os.close(self.write_to_fd)
+        os.close(self.get_write_fd())
 
     @staticmethod
     def is_last_line_of_protocol_message(line):
@@ -101,7 +127,7 @@ class SMTPRequestBuffer(AbstractProtocolMessage):
 
 class SMTPResponseBuffer(AbstractProtocolMessage):
     def close(self):
-        os.close(self.read_from_fd)
+        os.close(self.get_read_fd())
 
     @staticmethod
     def is_last_line_of_protocol_message(line):
@@ -118,34 +144,21 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
 class ProtocolProxy:
     def __init__(self, child, request_buffer, response_buffer):
         self.__child = child
-        self.__request_buffer = request_buffer
-        self.__response_buffer = response_buffer
+        self.__protocol_buffers = ProtocolBuffers(request_buffer, response_buffer)
 
     def proxy(self):
         is_open = True
         while is_open:
-            for message_buffer in self.__readable_buffers(self.__request_buffer, self.__response_buffer):
+            for message_buffer in self.__protocol_buffers.get_readables():
                 if not message_buffer.proxy_more_stuff():
                     is_open = False
 
-        self.__request_buffer.close()
-        self.__response_buffer.close()
+        self.__protocol_buffers.close()
         sys.exit(self.__get_child_exitcode())
 
     def __get_child_exitcode(self):
         (pid, exitcode, resources) = os.wait4(self.__child, 0)
         return exitcode
-
-    @staticmethod
-    def __readable_buffers(one, two):
-        readables = []
-        of_these = (one.read_from_fd, two.read_from_fd)
-        (readable_fds, writable_fds, exceptional_fds) = select.select(of_these, [], [])
-        if one.read_from_fd in readable_fds:
-            readables.append(one)
-        if two.read_from_fd in readable_fds:
-            readables.append(two)
-        return readables
 
 
 class ProtocolProxied:

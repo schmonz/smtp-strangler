@@ -7,26 +7,26 @@ import sys
 
 class ProtocolStrangler:
     def __init__(self, logger, command_line_arguments):
-        self.logger = logger
-        self.command_line_arguments = command_line_arguments
+        self.__logger = logger
+        self.__command_line_arguments = command_line_arguments
 
         (self.from_client, self.to_client) = (sys.stdin.fileno(), sys.stdout.fileno())
         (self.from_proxy, self.to_server) = os.pipe()
         (self.from_server, self.to_proxy) = os.pipe()
 
-        self.child_process_id = self.fork_and_prep(self.from_proxy, self.to_server, self.from_server, self.to_proxy)
+        self.child_process_id = self.__fork_and_prep(self.from_proxy, self.to_server, self.from_server, self.to_proxy)
 
     def strangle(self):
         if self.child_process_id:
-            request_buffer = SMTPRequestBuffer(self.logger, self.from_client, self.to_server)
-            response_buffer = SMTPResponseBuffer(self.logger, self.from_server, self.to_client)
+            request_buffer = SMTPRequestBuffer(self.__logger, self.from_client, self.to_server)
+            response_buffer = SMTPResponseBuffer(self.__logger, self.from_server, self.to_client)
             ProtocolProxy(self.child_process_id, request_buffer, response_buffer).proxy()
         else:
-            ProtocolProxied(self.command_line_arguments, self.logger, self.from_client, self.to_proxy, self.from_proxy, self.to_client).run()
+            ProtocolProxied(self.__command_line_arguments, self.__logger, self.from_client, self.to_proxy, self.from_proxy, self.to_client).run()
 
     @staticmethod
-    def fork_and_prep(from_proxy, to_server,
-                      from_server, to_proxy):
+    def __fork_and_prep(from_proxy, to_server,
+                        from_server, to_proxy):
         child = os.fork()
         if child:
             os.close(from_proxy)
@@ -39,10 +39,10 @@ class ProtocolStrangler:
 
 class ProtocolLogger:
     def __init__(self):
-        self.fd = 2
+        self.__fd = 2
 
     def logit(self, message):
-        os.write(self.fd, message + b'\n')
+        os.write(self.__fd, message + b'\n')
 
 
 class AbstractProtocolMessage:
@@ -118,23 +118,23 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
 class ProtocolProxy:
     def __init__(self, child, request_buffer, response_buffer):
         self.child = child
-        self.request_buffer = request_buffer
-        self.response_buffer = response_buffer
+        self.__request_buffer = request_buffer
+        self.__response_buffer = response_buffer
 
     def proxy(self):
         is_open = True
         while is_open:
-            for message_buffer in self.readable_buffers(self.request_buffer, self.response_buffer):
+            for message_buffer in self.__readable_buffers(self.__request_buffer, self.__response_buffer):
                 if not message_buffer.proxy_more_stuff():
                     is_open = False
 
-        self.request_buffer.close()
-        self.response_buffer.close()
+        self.__request_buffer.close()
+        self.__response_buffer.close()
         (pid, exitcode, resources) = os.wait4(self.child, 0)
         sys.exit(exitcode)
 
     @staticmethod
-    def readable_buffers(one, two):
+    def __readable_buffers(one, two):
         readables = []
         of_these = (one.read_from_fd, two.read_from_fd)
         (readable_fds, writable_fds, exceptional_fds) = select.select(of_these, [], [])
@@ -147,17 +147,17 @@ class ProtocolProxy:
 
 class ProtocolProxied:
     def __init__(self, command_line_arguments, logger, from_client, to_proxy, from_proxy, to_client):
-        self.command_line_arguments = command_line_arguments
-        self.logger = logger
+        self.__command_line_arguments = command_line_arguments
+        self.__logger = logger
 
         os.dup2(from_proxy, from_client)
         os.dup2(to_proxy, to_client)
 
     def run(self):
         try:
-            os.execvp(self.command_line_arguments[0], self.command_line_arguments)
+            os.execvp(self.__command_line_arguments[0], self.__command_line_arguments)
         except OSError as o:
-            self.logger.logit(o.strerror)
+            self.__logger.logit(o.strerror)
 
 
 def die_usage(logger):

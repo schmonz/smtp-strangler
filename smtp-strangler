@@ -178,8 +178,8 @@ class ProtocolProxied:
 
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
-    logger.logit(b'usage: ' + this_program + b' prog [ arg ... ]')
-    sys.exit(1)
+    logger.logit(b'usage: ' + this_program + b' program-to-strangle [ arg ... ]')
+    sys.exit(99)
 
 
 def main(command_line_arguments):
@@ -191,9 +191,3 @@ def main(command_line_arguments):
 
 if '__main__' == __name__:
     main(sys.argv[1:])
-
-# XXX
-# 0. Log only entire requests and entire responses
-# 1. Catch up to fixsmtpio_*.c
-# 2. Check on 2.7 and 3.6
-# 3. Test-drive from scratch (with both Pythons) for a git-crawl demo

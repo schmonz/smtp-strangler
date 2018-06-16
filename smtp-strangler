@@ -71,6 +71,7 @@ class AbstractProtocolMessage:
 
         self.__buffer = b''
         self.__protocol_message = b''
+        self.safe_to_munge = True
 
     @staticmethod
     def __first_line_and_leftovers(possibly_multiline):
@@ -85,7 +86,7 @@ class AbstractProtocolMessage:
             self.__buffer = leftovers
             self.__protocol_message += line
             if self.is_last_line_of_protocol_message(line):
-                self.logger.logit(self.get_log_prefix() + b' ' + self.__protocol_message)
+                self.logger.logit(b'       ' + self.get_log_prefix() + b' ' + self.__protocol_message)
                 munged_message = self.munge_message(self.__protocol_message)
                 self.logger.logit(b'munged-' + self.get_log_prefix() + b' ' + munged_message + '\n')
                 os.write(self.__write_to_fd, munged_message)
@@ -111,8 +112,13 @@ class SMTPRequestBuffer(AbstractProtocolMessage):
     def close(self):
         os.close(self.get_write_fd())
 
-    @staticmethod
-    def is_last_line_of_protocol_message(line):
+    def is_last_line_of_protocol_message(self, line):
+        # XXX case-insensitive, and verb only, and server agrees
+        if self.safe_to_munge and line == 'data\n':  
+            # XXX self.want_data = True
+            self.safe_to_munge = False
+        if not self.safe_to_munge and line == '.\n':
+            self.safe_to_munge = True
         return True
 
     @staticmethod
@@ -122,10 +128,13 @@ class SMTPRequestBuffer(AbstractProtocolMessage):
     def log_disconnect(self):
         self.logger.logit(b'[client dropped connection]\n')
 
-    @staticmethod
-    def munge_message(message):
+    def munge_message(self, message):
+        if not self.safe_to_munge:
+            return message
+
         munged_message = message.rstrip('\r\n')
-        if munged_message.startswith('word '): # XXX case-insensitive please
+        # XXX case-insensitive, and verb only
+        if munged_message.startswith('word '):
             munged_message = 'noop ' + munged_message
         munged_message += '\r\n'
         return munged_message
@@ -135,8 +144,7 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
     def close(self):
         os.close(self.get_read_fd())
 
-    @staticmethod
-    def is_last_line_of_protocol_message(line):
+    def is_last_line_of_protocol_message(self, line):
         return len(line) >= 4 and ' ' == line[3]
 
     @staticmethod
@@ -146,8 +154,10 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
     def log_disconnect(self):
         self.logger.logit(b'[server dropped connection]\n')
 
-    @staticmethod
-    def munge_message(message):
+    def munge_message(self, message):
+        if not self.safe_to_munge:
+            return message
+
         return message
 
 

@@ -130,8 +130,11 @@ class ProtocolProxy:
 
         self.__request_buffer.close()
         self.__response_buffer.close()
+        sys.exit(self.__get_child_exitcode())
+
+    def __get_child_exitcode(self):
         (pid, exitcode, resources) = os.wait4(self.__child, 0)
-        sys.exit(exitcode)
+        return exitcode
 
     @staticmethod
     def __readable_buffers(one, two):

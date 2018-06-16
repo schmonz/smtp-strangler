@@ -108,6 +108,24 @@ class ProtocolProxy:
         self.teardown_and_exit()
 
     @staticmethod
+    def readable_buffers(one, two):
+        readables = []
+        of_these = (one.read_from_fd, two.read_from_fd)
+        (readable_fds, writable_fds, exceptional_fds) = select.select(of_these, [], [])
+        if one.read_from_fd in readable_fds:
+            readables.append(one)
+        if two.read_from_fd in readable_fds:
+            readables.append(two)
+        return readables
+
+    def read_and_process_until_either_end_closes(self):
+        is_open = True
+        while is_open:
+            for message_buffer in self.readable_buffers(self.request_buffer, self.response_buffer):
+                if not self.process_some_bytes(message_buffer.read_from_fd, message_buffer.write_to_fd, message_buffer.process_bytes, message_buffer.log_disconnect):
+                    is_open = False
+
+    @staticmethod
     def process_some_bytes(from_fd, to_fd, process_bytes_fn, log_disconnect_fn):
         buffer_size = 77
 
@@ -119,36 +137,6 @@ class ProtocolProxy:
         else:
             log_disconnect_fn()
             return False
-
-    @staticmethod
-    def readable_fds(of_these):
-        (readable, writable, exceptional) = select.select(of_these, [], [])
-        return readable
-
-    def read_and_process_until_either_end_closes(self):
-        handler_args_for = {
-            self.request_buffer.read_from_fd: (
-                self.request_buffer.read_from_fd,
-                self.request_buffer.write_to_fd,
-                self.request_buffer.process_bytes,
-                self.request_buffer.log_disconnect,
-            ),
-            self.response_buffer.read_from_fd: (
-                self.response_buffer.read_from_fd,
-                self.response_buffer.write_to_fd,
-                self.response_buffer.process_bytes,
-                self.response_buffer.log_disconnect,
-            ),
-        }
-
-        potentially_readable_fds = list(handler_args_for.keys())
-
-        is_open = True
-        while is_open:
-            for fd in self.readable_fds(potentially_readable_fds):
-                handler_args = handler_args_for[fd]
-                if not self.process_some_bytes(*handler_args):
-                    is_open = False
 
     def teardown_and_exit(self):
         os.close(self.response_buffer.read_from_fd)

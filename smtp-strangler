@@ -51,31 +51,31 @@ class AbstractProtocolMessage:
         self.read_from_fd = read_from_fd
         self.write_to_fd = write_to_fd
 
-        self.buffer = b''
-        self.protocol_message = b''
+        self.__buffer = b''
+        self.__protocol_message = b''
 
     @staticmethod
-    def first_line_and_leftovers(possibly_multiline):
+    def __first_line_and_leftovers(possibly_multiline):
         (first_line, leftovers) = str.split(possibly_multiline, '\n', 1)
         first_line += '\n'
         return (first_line, leftovers)
 
-    def process_bytes(self, some_bytes):
-        self.buffer += some_bytes
-        while '\n' in self.buffer:
-            (line, leftovers) = self.first_line_and_leftovers(self.buffer)
-            self.buffer = leftovers
-            self.protocol_message += line
+    def __process_bytes(self, some_bytes):
+        self.__buffer += some_bytes
+        while '\n' in self.__buffer:
+            (line, leftovers) = self.__first_line_and_leftovers(self.__buffer)
+            self.__buffer = leftovers
+            self.__protocol_message += line
             if self.is_last_line_of_protocol_message(line):
-                self.logger.logit(self.get_log_prefix() + b' ' + self.protocol_message)
-                self.protocol_message = b''
+                self.logger.logit(self.get_log_prefix() + b' ' + self.__protocol_message)
+                self.__protocol_message = b''
 
     def proxy_more_stuff(self):
         buffer_size = 77
 
         some_bytes = os.read(self.read_from_fd, buffer_size)
         if some_bytes:
-            self.process_bytes(some_bytes)
+            self.__process_bytes(some_bytes)
             os.write(self.write_to_fd, some_bytes)
             return True
         else:
@@ -84,6 +84,9 @@ class AbstractProtocolMessage:
 
 
 class SMTPRequestBuffer(AbstractProtocolMessage):
+    def close(self):
+        os.close(self.write_to_fd)
+
     @staticmethod
     def is_last_line_of_protocol_message(line):
         return True
@@ -97,6 +100,9 @@ class SMTPRequestBuffer(AbstractProtocolMessage):
 
 
 class SMTPResponseBuffer(AbstractProtocolMessage):
+    def close(self):
+        os.close(self.read_from_fd)
+
     @staticmethod
     def is_last_line_of_protocol_message(line):
         return len(line) >= 4 and ' ' == line[3]
@@ -122,8 +128,8 @@ class ProtocolProxy:
                 if not message_buffer.proxy_more_stuff():
                     is_open = False
 
-        os.close(self.response_buffer.read_from_fd)
-        os.close(self.request_buffer.write_to_fd)
+        self.request_buffer.close()
+        self.response_buffer.close()
         (pid, exitcode, resources) = os.wait4(self.child, 0)
         sys.exit(exitcode)
 

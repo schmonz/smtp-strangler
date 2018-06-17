@@ -85,8 +85,7 @@ class AbstractProtocolMessage:
     def __process_bytes(self, some_bytes):
         self.__buffer += some_bytes
         while '\n' in self.__buffer:
-            (line, leftovers) = self.__first_line_and_leftovers(self.__buffer)
-            self.__buffer = leftovers
+            (line, self.__buffer) = self.__first_line_and_leftovers(self.__buffer)
             self.__protocol_message += line
             if self.is_last_line_of_protocol_message(line):
                 self.__process_message()

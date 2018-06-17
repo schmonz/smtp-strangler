@@ -89,13 +89,16 @@ class AbstractProtocolMessage:
             self.__buffer = leftovers
             self.__protocol_message += line
             if self.is_last_line_of_protocol_message(line):
-                self.logger.log(b'       ' + self.get_log_prefix() +
-                                b' ' + self.__protocol_message)
-                munged_message = self.munge_message(self.__protocol_message)
-                self.logger.log(b'munged-' + self.get_log_prefix() +
-                                b' ' + munged_message + '\n')
-                os.write(self.__write_to_fd, munged_message)
-                self.__protocol_message = b''
+                self.__process_message()
+
+    def __process_message(self):
+        self.logger.log(b'       ' + self.get_log_prefix() +
+                        b' ' + self.__protocol_message)
+        munged_message = self.munge_message(self.__protocol_message)
+        self.logger.log(b'munged-' + self.get_log_prefix() +
+                        b' ' + munged_message + '\n')
+        os.write(self.__write_to_fd, munged_message)
+        self.__protocol_message = b''
 
     def get_read_fd(self):
         return self.__read_from_fd

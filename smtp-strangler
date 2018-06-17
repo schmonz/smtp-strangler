@@ -10,55 +10,51 @@ class ProtocolStrangler:
         (self.from_client, self.to_client) = (from_client, to_client)
         (self.from_proxy, self.to_server) = os.pipe()
         (self.from_server, self.to_proxy) = os.pipe()
-        self.child_process_id = self.__fork_and_prep(self.from_proxy, self.to_server, self.from_server, self.to_proxy)
-
-    def go(self, logger, command_line_arguments):
+        self.child_process_id = os.fork()
         if self.child_process_id:
-            request_buffer = SMTPRequestBuffer(logger, self.from_client, self.to_server)
-            response_buffer = SMTPResponseBuffer(logger, self.from_server, self.to_client)
-            proxy = ProtocolProxy(request_buffer, response_buffer)
-            proxy.go(self.child_process_id, 77)
+            os.close(self.from_proxy)
+            os.close(self.to_proxy)
         else:
-            proxied = ProtocolProxied(self.from_client, self.to_proxy, self.from_proxy, self.to_client)
-            proxied.go(logger, command_line_arguments)
+            os.close(self.from_server)
+            os.close(self.to_server)
 
-    @staticmethod
-    def __fork_and_prep(from_proxy, to_server,
-                        from_server, to_proxy):
-        child = os.fork()
-        if child:
-            os.close(from_proxy)
-            os.close(to_proxy)
+    def strangle_and_exit(self, logger, command_line_arguments):
+        if self.child_process_id:
+            ProtocolProxy([
+                SMTPRequests(logger, self.from_client, self.to_server),
+                SMTPResponses(logger, self.from_server, self.to_client),
+            ]).proxy_and_exit(self.child_process_id, 77)
         else:
-            os.close(from_server)
-            os.close(to_server)
-        return child
+            ProtocolProxied(
+                self.from_client, self.to_proxy,
+                self.from_proxy, self.to_client,
+            ).exec_and_exit(logger, command_line_arguments)
 
 
 class ProtocolLogger:
     def __init__(self, fd):
         self.__fd = fd
 
-    def logit(self, message):
+    def log(self, message):
         os.write(self.__fd, message)
 
 
-class ProtocolBuffers:
-    def __init__(self, list_of_buffers):
-        self.__list_of_buffers = list_of_buffers
-        self.__list_of_fds = []
-        for each_buffer in self.__list_of_buffers:
-            self.__list_of_fds.append(each_buffer.get_read_fd())
+class ProtocolBufferList:
+    def __init__(self, buffer_list):
+        self.__buffer_list = buffer_list
+        self.__fd_list = []
+        for each_buffer in self.__buffer_list:
+            self.__fd_list.append(each_buffer.get_read_fd())
 
     def close(self):
-        for each_buffer in self.__list_of_buffers:
+        for each_buffer in self.__buffer_list:
             each_buffer.close()
 
     def get_readables(self):
-        (readable_fds, writable_fds, exceptional_fds) = select.select(self.__list_of_fds, [], [])
+        (reads, writes, exceptionals) = select.select(self.__fd_list, [], [])
         readables = []
-        for each_buffer in self.__list_of_buffers:
-            if each_buffer.get_read_fd() in readable_fds:
+        for each_buffer in self.__buffer_list:
+            if each_buffer.get_read_fd() in reads:
                 readables.append(each_buffer)
         return readables
 
@@ -86,9 +82,11 @@ class AbstractProtocolMessage:
             self.__buffer = leftovers
             self.__protocol_message += line
             if self.is_last_line_of_protocol_message(line):
-                self.logger.logit(b'       ' + self.get_log_prefix() + b' ' + self.__protocol_message)
+                self.logger.log(b'       ' + self.get_log_prefix() +
+                                b' ' + self.__protocol_message)
                 munged_message = self.munge_message(self.__protocol_message)
-                self.logger.logit(b'munged-' + self.get_log_prefix() + b' ' + munged_message + '\n')
+                self.logger.log(b'munged-' + self.get_log_prefix() +
+                                b' ' + munged_message + '\n')
                 os.write(self.__write_to_fd, munged_message)
                 self.__protocol_message = b''
 
@@ -108,13 +106,13 @@ class AbstractProtocolMessage:
             return False
 
 
-class SMTPRequestBuffer(AbstractProtocolMessage):
+class SMTPRequests(AbstractProtocolMessage):
     def close(self):
         os.close(self.get_write_fd())
 
     def is_last_line_of_protocol_message(self, line):
         # XXX case-insensitive, and verb only, and server agrees
-        if self.safe_to_munge and line == 'data\n':  
+        if self.safe_to_munge and line == 'data\n':
             # XXX self.want_data = True
             self.safe_to_munge = False
         if not self.safe_to_munge and line == '.\n':
@@ -126,7 +124,7 @@ class SMTPRequestBuffer(AbstractProtocolMessage):
         return b'request>'
 
     def log_disconnect(self):
-        self.logger.logit(b'[client dropped connection]\n')
+        self.logger.log(b'[client dropped connection]\n')
 
     def munge_message(self, message):
         if not self.safe_to_munge:
@@ -140,7 +138,7 @@ class SMTPRequestBuffer(AbstractProtocolMessage):
         return munged_message
 
 
-class SMTPResponseBuffer(AbstractProtocolMessage):
+class SMTPResponses(AbstractProtocolMessage):
     def close(self):
         os.close(self.get_read_fd())
 
@@ -152,7 +150,7 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
         return b'response<'
 
     def log_disconnect(self):
-        self.logger.logit(b'[server dropped connection]\n')
+        self.logger.log(b'[server dropped connection]\n')
 
     def munge_message(self, message):
         if not self.safe_to_munge:
@@ -162,15 +160,15 @@ class SMTPResponseBuffer(AbstractProtocolMessage):
 
 
 class ProtocolProxy:
-    def __init__(self, request_buffer, response_buffer):
-        self.__buffers = ProtocolBuffers([request_buffer, response_buffer])
+    def __init__(self, buffers):
+        self.__buffers = ProtocolBufferList(buffers)
 
     @staticmethod
     def __await_child_exitcode(child):
         (pid, exitcode, resources) = os.wait4(child, 0)
         return exitcode
 
-    def go(self, child, read_length):
+    def proxy_and_exit(self, child, read_length):
         someone_closed = False
         while not someone_closed:
             for readable in self.__buffers.get_readables():
@@ -186,16 +184,18 @@ class ProtocolProxied:
         os.dup2(from_proxy, from_client)
         os.dup2(to_proxy, to_client)
 
-    def go(self, logger, command_line_arguments):
+    def exec_and_exit(self, logger, command_line_arguments):
+        program_to_strangle = command_line_arguments[0]
         try:
-            os.execvp(command_line_arguments[0], command_line_arguments)
+            os.execvp(program_to_strangle, command_line_arguments)
         except OSError as o:
-            logger.logit(o.strerror + '\n')
+            logger.log(program_to_strangle + ': ' + o.strerror + '\n')
 
 
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
-    logger.logit(b'usage: ' + this_program + b' program-to-strangle [ arg ... ]\n')
+    logger.log(b'usage: ' + this_program +
+               b' program-to-strangle [ arg ... ]\n')
     sys.exit(99)
 
 
@@ -203,8 +203,10 @@ def main(command_line_arguments):
     logger = ProtocolLogger(sys.stderr.fileno())
     if not command_line_arguments:
         die_usage(logger)
-    strangler = ProtocolStrangler(sys.stdin.fileno(), sys.stdout.fileno())
-    strangler.go(logger, command_line_arguments)
+    ProtocolStrangler(
+        sys.stdin.fileno(),
+        sys.stdout.fileno(),
+    ).strangle_and_exit(logger, command_line_arguments)
 
 
 if '__main__' == __name__:

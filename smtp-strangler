@@ -25,11 +25,18 @@ class ProtocolStrangler:
                     SMTPRequests(logger, self.from_client, self.to_server),
                     SMTPResponses(logger, self.from_server, self.to_client),
                 ])
-            else:
+            elif protocol == 'lines':
                 proxy = ProtocolProxy([
                     GenericLinesIn(logger, self.from_client, self.to_server),
                     GenericLinesOut(logger, self.from_server, self.to_client),
                 ])
+            elif protocol == 'bytes':
+                proxy = ProtocolProxy([
+                    GenericBytesIn(logger, self.from_client, self.to_server),
+                    GenericBytesOut(logger, self.from_server, self.to_client),
+                ])
+            else:
+                die_usage(logger)
             proxy.proxy_and_exit(self.child_process_id, 77)
         else:
             ProtocolProxied(
@@ -75,6 +82,7 @@ class AbstractProtocolMessage:
         self.__buffer = b''
         self.__protocol_message = b''
         self.safe_to_munge = True
+        self.line_at_a_time = True
 
     @staticmethod
     def __first_line_and_leftovers(possibly_multiline):
@@ -83,12 +91,16 @@ class AbstractProtocolMessage:
         return (first_line, leftovers)
 
     def __process_bytes(self, some_bytes):
-        self.__buffer += some_bytes
-        while '\n' in self.__buffer:
-            (line, self.__buffer) = self.__first_line_and_leftovers(self.__buffer)
-            self.__protocol_message += line
-            if self.is_last_line_of_protocol_message(line):
-                self.__process_message()
+        if self.line_at_a_time:
+            self.__buffer += some_bytes
+            while '\n' in self.__buffer:
+                (line, self.__buffer) = self.__first_line_and_leftovers(self.__buffer)
+                self.__protocol_message += line
+                if self.is_last_line_of_protocol_message(line):
+                    self.__process_message()
+        else:
+            self.__protocol_message = some_bytes
+            self.__process_message()
 
     def __process_message(self):
         self.logger.log(b'       ' + self.get_log_prefix() +
@@ -143,6 +155,50 @@ class GenericLinesOut(AbstractProtocolMessage):
     @staticmethod
     def get_log_prefix():
         return b'unspecified-response>'
+
+    def log_disconnect(self):
+        self.logger.log(b'[server dropped connection]\n')
+
+    def munge_message(self, message):
+        return message
+
+
+class GenericBytesIn(GenericLinesIn):
+    def __init__(self, logger, read_from_fd, write_to_fd):
+        GenericLinesIn.__init__(self, logger, read_from_fd, write_to_fd)
+        self.line_at_a_time = False
+
+    def close(self):
+        os.close(self.get_write_fd())
+
+    def is_last_line_of_protocol_message(self, line):
+        return True
+
+    @staticmethod
+    def get_log_prefix():
+        return b'unspecified-request-bytes>'
+
+    def log_disconnect(self):
+        self.logger.log(b'[client dropped connection]\n')
+
+    def munge_message(self, message):
+        return message
+
+
+class GenericBytesOut(GenericLinesOut):
+    def __init__(self, logger, read_from_fd, write_to_fd):
+        GenericLinesOut.__init__(self, logger, read_from_fd, write_to_fd)
+        self.line_at_a_time = False
+
+    def close(self):
+        os.close(self.get_read_fd())
+
+    def is_last_line_of_protocol_message(self, line):
+        return True
+
+    @staticmethod
+    def get_log_prefix():
+        return b'unspecified-response-bytes>'
 
     def log_disconnect(self):
         self.logger.log(b'[server dropped connection]\n')

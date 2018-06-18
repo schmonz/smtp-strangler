@@ -212,8 +212,8 @@ class SMTPRequests(AbstractProtocolMessage):
         os.close(self.get_write_fd())
 
     def is_last_line_of_protocol_message(self, line):
-        # XXX case-insensitive, and verb only, and server agrees
-        if self.safe_to_munge and line == 'data\n':
+        # XXX verb only, and server agrees
+        if self.safe_to_munge and line.lower() == 'data\n':
             # XXX self.want_data = True
             self.safe_to_munge = False
         if not self.safe_to_munge and line == '.\n':
@@ -232,8 +232,8 @@ class SMTPRequests(AbstractProtocolMessage):
             return message
 
         munged_message = message.rstrip('\r\n')
-        # XXX case-insensitive, and verb only
-        if munged_message.startswith('word '):
+        # XXX verb only
+        if munged_message.lower().startswith('word '):
             munged_message = 'noop ' + munged_message
         munged_message += '\r\n'
         return munged_message

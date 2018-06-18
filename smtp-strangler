@@ -168,9 +168,6 @@ class GenericBytesIn(GenericLinesIn):
         GenericLinesIn.__init__(self, logger, read_from_fd, write_to_fd)
         self.line_at_a_time = False
 
-    def close(self):
-        os.close(self.get_write_fd())
-
     def is_last_line_of_protocol_message(self, line):
         return True
 
@@ -190,9 +187,6 @@ class GenericBytesOut(GenericLinesOut):
         GenericLinesOut.__init__(self, logger, read_from_fd, write_to_fd)
         self.line_at_a_time = False
 
-    def close(self):
-        os.close(self.get_read_fd())
-
     def is_last_line_of_protocol_message(self, line):
         return True
 
@@ -207,10 +201,7 @@ class GenericBytesOut(GenericLinesOut):
         return message
 
 
-class SMTPRequests(AbstractProtocolMessage):
-    def close(self):
-        os.close(self.get_write_fd())
-
+class SMTPRequests(GenericLinesIn):
     def is_last_line_of_protocol_message(self, line):
         # XXX verb only, and server agrees
         if self.safe_to_munge and line.lower() == 'data\n':
@@ -239,10 +230,7 @@ class SMTPRequests(AbstractProtocolMessage):
         return munged_message
 
 
-class SMTPResponses(AbstractProtocolMessage):
-    def close(self):
-        os.close(self.get_read_fd())
-
+class SMTPResponses(GenericLinesOut):
     def is_last_line_of_protocol_message(self, line):
         return len(line) >= 4 and ' ' == line[3]
 

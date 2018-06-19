@@ -18,28 +18,15 @@ class ProtocolStrangler:
             os.close(self.from_server)
             os.close(self.to_server)
 
-    def strangle_and_exit(self, logger, protocol, command_line_arguments):
+    def strangle_and_exit(self, logger, command_line_arguments):
         if self.child_process_id:
-            if protocol == 'smtp':
-                requests = SMTPRequests(logger, self.from_client, self.to_server)
-                responses = SMTPResponses(logger, self.from_server, self.to_client)
-                responses.report_events(requests.got_response)
-                proxy = ProtocolProxy([
-                    requests,
-                    responses,
-                ])
-            elif protocol == 'lines':
-                proxy = ProtocolProxy([
-                    GenericLinesIn(logger, self.from_client, self.to_server),
-                    GenericLinesOut(logger, self.from_server, self.to_client),
-                ])
-            elif protocol == 'bytes':
-                proxy = ProtocolProxy([
-                    GenericBytesIn(logger, self.from_client, self.to_server),
-                    GenericBytesOut(logger, self.from_server, self.to_client),
-                ])
-            else:
-                die_usage(logger)
+            requests = SMTPRequests(logger, self.from_client, self.to_server)
+            responses = SMTPResponses(logger, self.from_server, self.to_client)
+            responses.report_events(requests.got_response)
+            proxy = ProtocolProxy([
+                requests,
+                responses,
+            ])
             proxy.proxy_and_exit(self.child_process_id, 77)
         else:
             ProtocolProxied(
@@ -336,7 +323,7 @@ def main(command_line_arguments):
     ProtocolStrangler(
         sys.stdin.fileno(),
         sys.stdout.fileno(),
-    ).strangle_and_exit(logger, 'smtp', command_line_arguments)
+    ).strangle_and_exit(logger, command_line_arguments)
 
 
 if '__main__' == __name__:

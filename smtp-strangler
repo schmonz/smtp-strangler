@@ -254,6 +254,7 @@ class SMTPResponses(GenericLinesOut):
     def __init__(self, logger, read_from_fd, write_to_fd):
         GenericLinesOut.__init__(self, logger, read_from_fd, write_to_fd)
         self.__report_message_callback = None
+        self.__should_munge_ehlo = False
 
     def is_last_line_of_protocol_message(self, line):
         return len(line) >= 4 and ' ' == line[3]
@@ -265,6 +266,19 @@ class SMTPResponses(GenericLinesOut):
     def log_disconnect(self):
         self.logger.log(b'[server dropped connection]\n')
 
+    @staticmethod
+    def __munge_ehlo(message):
+        return message + '250 GDPR 20160414\r\n'
+
+    @staticmethod
+    def __reformat_multiline_response(message):
+        reformatted = b''
+        lines = message.splitlines()
+        for line in lines[:-1]:
+            reformatted += line[:3] + '-' + line[4:] + '\n'
+        reformatted += lines[-1][:3] + ' ' + lines[-1][4:] + '\n'
+        return reformatted
+
     def munge_message(self, message):
         if self.__report_message_callback:
             self.__report_message_callback(message)
@@ -272,14 +286,21 @@ class SMTPResponses(GenericLinesOut):
         if not self.safe_to_munge:
             return message
 
+        if self.__should_munge_ehlo:
+            message = self.__munge_ehlo(message)
+            self.__should_munge_ehlo = False
+
+        message = self.__reformat_multiline_response(message)
         return message
 
     def receive_message(self, message):
-        (verb, arg) = (message, b'')
         try:
             (verb, arg) = str.split(message, ' ')
         except ValueError:
-            pass
+            (verb, arg) = (message.rstrip('\r\n'), b'')
+
+        if verb.lower() == 'ehlo':
+            self.__should_munge_ehlo = True
 
     def report_messages(self, callback):
         self.__report_message_callback = callback

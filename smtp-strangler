@@ -122,7 +122,7 @@ class AbstractProtocolMessage:
                         b' ' + message)
         munged_message = self.munge_message(message)
         self.logger.log(b'munged-' + self.get_log_prefix() +
-                        b' ' + munged_message + '\n')
+                        b' ' + munged_message + '\r\n')
         os.write(self.__write_to_fd, munged_message)
 
 
@@ -138,7 +138,7 @@ class GenericLinesIn(AbstractProtocolMessage):
         return b'unspecified-request>'
 
     def log_disconnect(self):
-        self.logger.log(b'[client dropped connection]\n')
+        self.logger.log(b'[client dropped connection]\r\n')
 
     def munge_message(self, message):
         return message
@@ -156,7 +156,7 @@ class GenericLinesOut(AbstractProtocolMessage):
         return b'unspecified-response>'
 
     def log_disconnect(self):
-        self.logger.log(b'[server dropped connection]\n')
+        self.logger.log(b'[server dropped connection]\r\n')
 
     def munge_message(self, message):
         return message
@@ -175,7 +175,7 @@ class GenericBytesIn(GenericLinesIn):
         return b'unspecified-request-bytes>'
 
     def log_disconnect(self):
-        self.logger.log(b'[client dropped connection]\n')
+        self.logger.log(b'[client dropped connection]\r\n')
 
     def munge_message(self, message):
         return message
@@ -194,7 +194,7 @@ class GenericBytesOut(GenericLinesOut):
         return b'unspecified-response-bytes>'
 
     def log_disconnect(self):
-        self.logger.log(b'[server dropped connection]\n')
+        self.logger.log(b'[server dropped connection]\r\n')
 
     def munge_message(self, message):
         return message
@@ -209,9 +209,9 @@ class SMTPRequests(GenericLinesIn):
 
     def is_last_line_of_protocol_message(self, line):
         # XXX verb only
-        if self.safe_to_munge and line.lower() == 'data\n':
+        if self.safe_to_munge and line.lower() == 'data\r\n':
             self.__want_data = True
-        if self.__in_data and line == '.\n':
+        if self.__in_data and line == '.\r\n':
             self.safe_to_munge = True
         return True
 
@@ -220,7 +220,7 @@ class SMTPRequests(GenericLinesIn):
         return b'request>'
 
     def log_disconnect(self):
-        self.logger.log(b'[client dropped connection]\n')
+        self.logger.log(b'[client dropped connection]\r\n')
 
     def munge_message(self, message):
         if self.__report_message_callback:
@@ -264,7 +264,7 @@ class SMTPResponses(GenericLinesOut):
         return b'response<'
 
     def log_disconnect(self):
-        self.logger.log(b'[server dropped connection]\n')
+        self.logger.log(b'[server dropped connection]\r\n')
 
     @staticmethod
     def __munge_ehlo(message):
@@ -340,13 +340,13 @@ class ProtocolProxied:
         try:
             os.execvp(program_to_strangle, command_line_arguments)
         except OSError as o:
-            logger.log(program_to_strangle + ': ' + o.strerror + '\n')
+            logger.log(program_to_strangle + ': ' + o.strerror + '\r\n')
 
 
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
     logger.log(b'usage: ' + this_program +
-               b' program-to-strangle [ arg ... ]\n')
+               b' program-to-strangle [ arg ... ]\r\n')
     sys.exit(99)
 
 

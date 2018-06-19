@@ -64,6 +64,9 @@ class ProtocolBufferList:
         for each_buffer in self.__buffer_list:
             each_buffer.close()
 
+    def get_all(self):
+        return self.__buffer_list
+
     def get_readables(self):
         (reads, writes, exceptionals) = select.select(self.__fd_list, [], [])
         readables = []
@@ -79,10 +82,23 @@ class AbstractProtocolMessage:
         self.__read_from_fd = read_from_fd
         self.__write_to_fd = write_to_fd
 
-        self.__buffer = b''
+        self.__bytes = b''
         self.__protocol_message = b''
         self.safe_to_munge = True
         self.line_at_a_time = True
+        self.whole_message_ready = False
+
+    def __accumulate(self, some_bytes):
+        if self.line_at_a_time:
+            self.__bytes += some_bytes
+            while '\n' in self.__bytes:
+                (line, self.__bytes) = self.__first_line_and_leftovers(self.__bytes)
+                self.__protocol_message += line
+                if self.is_last_line_of_protocol_message(line):
+                    self.whole_message_ready = True
+        else:
+            self.__protocol_message = some_bytes
+            self.whole_message_ready = True
 
     @staticmethod
     def __first_line_and_leftovers(possibly_multiline):
@@ -90,19 +106,25 @@ class AbstractProtocolMessage:
         first_line += '\n'
         return (first_line, leftovers)
 
-    def __process_bytes(self, some_bytes):
-        if self.line_at_a_time:
-            self.__buffer += some_bytes
-            while '\n' in self.__buffer:
-                (line, self.__buffer) = self.__first_line_and_leftovers(self.__buffer)
-                self.__protocol_message += line
-                if self.is_last_line_of_protocol_message(line):
-                    self.__process_message()
-        else:
-            self.__protocol_message = some_bytes
-            self.__process_message()
+    def get_read_fd(self):
+        return self.__read_from_fd
 
-    def __process_message(self):
+    def get_write_fd(self):
+        return self.__write_to_fd
+
+    def has_whole_message(self):
+        return self.whole_message_ready
+
+    def read(self, read_length):
+        some_bytes = os.read(self.__read_from_fd, read_length)
+        if some_bytes:
+            self.__accumulate(some_bytes)
+            return True
+        else:
+            self.log_disconnect()
+            return False
+
+    def send(self):
         self.logger.log(b'       ' + self.get_log_prefix() +
                         b' ' + self.__protocol_message)
         munged_message = self.munge_message(self.__protocol_message)
@@ -110,21 +132,7 @@ class AbstractProtocolMessage:
                         b' ' + munged_message + '\n')
         os.write(self.__write_to_fd, munged_message)
         self.__protocol_message = b''
-
-    def get_read_fd(self):
-        return self.__read_from_fd
-
-    def get_write_fd(self):
-        return self.__write_to_fd
-
-    def go(self, read_length):
-        some_bytes = os.read(self.__read_from_fd, read_length)
-        if some_bytes:
-            self.__process_bytes(some_bytes)
-            return True
-        else:
-            self.log_disconnect()
-            return False
+        self.whole_message_ready = False
 
 
 class GenericLinesIn(AbstractProtocolMessage):
@@ -259,9 +267,15 @@ class ProtocolProxy:
 
     def proxy_and_exit(self, child, read_length):
         someone_closed = False
+
         while not someone_closed:
-            for readable in self.__buffers.get_readables():
-                if not readable.go(read_length):
+            for each_buffer in self.__buffers.get_all():
+                # XXX should be a `while`: drain buffer until no more whole messages
+                if each_buffer.has_whole_message():
+                    each_buffer.send()
+                    # XXX _and_queue_just_enough_of_it
+            for each_buffer in self.__buffers.get_readables():
+                if not each_buffer.read(read_length):
                     someone_closed = True
 
         self.__buffers.close()

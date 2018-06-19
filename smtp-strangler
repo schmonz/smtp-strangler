@@ -75,9 +75,9 @@ class AbstractProtocolMessage:
 
         self.__bytes = b''
         self.__protocol_message = b''
+        self.__protocol_messages = []
         self.safe_to_munge = True
         self.line_at_a_time = True
-        self.whole_message_ready = False
 
     def __accumulate(self, some_bytes):
         if self.line_at_a_time:
@@ -86,10 +86,11 @@ class AbstractProtocolMessage:
                 (line, self.__bytes) = self.__first_line_and_leftovers(self.__bytes)
                 self.__protocol_message += line
                 if self.is_last_line_of_protocol_message(line):
-                    self.whole_message_ready = True
+                    self.__protocol_messages.append(self.__protocol_message)
+                    self.__protocol_message = b''
         else:
-            self.__protocol_message = some_bytes
-            self.whole_message_ready = True
+            self.__protocol_messages.append(self.__protocol_message)
+            self.__protocol_message = b''
 
     @staticmethod
     def __first_line_and_leftovers(possibly_multiline):
@@ -104,7 +105,7 @@ class AbstractProtocolMessage:
         return self.__write_to_fd
 
     def has_whole_message(self):
-        return self.whole_message_ready
+        return len(self.__protocol_messages) > 0
 
     def read(self, read_length):
         some_bytes = os.read(self.__read_from_fd, read_length)
@@ -116,14 +117,13 @@ class AbstractProtocolMessage:
             return False
 
     def send(self):
+        message = self.__protocol_messages.pop(0)
         self.logger.log(b'       ' + self.get_log_prefix() +
-                        b' ' + self.__protocol_message)
-        munged_message = self.munge_message(self.__protocol_message)
+                        b' ' + message)
+        munged_message = self.munge_message(message)
         self.logger.log(b'munged-' + self.get_log_prefix() +
                         b' ' + munged_message + '\n')
         os.write(self.__write_to_fd, munged_message)
-        self.__protocol_message = b''
-        self.whole_message_ready = False
 
 
 class GenericLinesIn(AbstractProtocolMessage):
@@ -320,10 +320,8 @@ class ProtocolProxy:
 
         while not someone_closed:
             for each_buffer in self.__buffers.get_all():
-                # XXX should be a `while`: drain buffer until no more whole messages
-                if each_buffer.has_whole_message():
+                while each_buffer.has_whole_message():
                     each_buffer.send()
-                    # XXX _and_queue_just_enough_of_it
             for each_buffer in self.__buffers.get_readables():
                 if not each_buffer.read(read_length):
                     someone_closed = True

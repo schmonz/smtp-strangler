@@ -21,9 +21,12 @@ class ProtocolStrangler:
     def strangle_and_exit(self, logger, protocol, command_line_arguments):
         if self.child_process_id:
             if protocol == 'smtp':
+                requests = SMTPRequests(logger, self.from_client, self.to_server)
+                responses = SMTPResponses(logger, self.from_server, self.to_client)
+                responses.report_events(requests.got_response)
                 proxy = ProtocolProxy([
-                    SMTPRequests(logger, self.from_client, self.to_server),
-                    SMTPResponses(logger, self.from_server, self.to_client),
+                    requests,
+                    responses,
                 ])
             elif protocol == 'lines':
                 proxy = ProtocolProxy([
@@ -210,12 +213,16 @@ class GenericBytesOut(GenericLinesOut):
 
 
 class SMTPRequests(GenericLinesIn):
+    def __init__(self, logger, read_from_fd, write_to_fd):
+        GenericLinesIn.__init__(self, logger, read_from_fd, write_to_fd)
+        self.__want_data = False
+        self.__in_data = False
+
     def is_last_line_of_protocol_message(self, line):
-        # XXX verb only, and server agrees
+        # XXX verb only
         if self.safe_to_munge and line.lower() == 'data\n':
-            # XXX self.want_data = True
-            self.safe_to_munge = False
-        if not self.safe_to_munge and line == '.\n':
+            self.__want_data = True
+        if self.__in_data and line == '.\n':
             self.safe_to_munge = True
         return True
 
@@ -237,8 +244,22 @@ class SMTPRequests(GenericLinesIn):
         munged_message += '\r\n'
         return munged_message
 
+    def got_response(self, message):
+        if self.__want_data:
+            self.__want_data = False
+            if message.lower().startswith('354 '):
+                self.safe_to_munge = False
+                self.__in_data = True
+            else:
+                self.safe_to_munge = True
+                self.__in_data = False
+
 
 class SMTPResponses(GenericLinesOut):
+    def __init__(self, logger, read_from_fd, write_to_fd):
+        GenericLinesOut.__init__(self, logger, read_from_fd, write_to_fd)
+        self.__report_event_callback = None
+
     def is_last_line_of_protocol_message(self, line):
         return len(line) >= 4 and ' ' == line[3]
 
@@ -250,10 +271,16 @@ class SMTPResponses(GenericLinesOut):
         self.logger.log(b'[server dropped connection]\n')
 
     def munge_message(self, message):
+        if self.__report_event_callback:
+            self.__report_event_callback(message)
+
         if not self.safe_to_munge:
             return message
 
         return message
+
+    def report_events(self, callback):
+        self.__report_event_callback = callback
 
 
 class ProtocolProxy:

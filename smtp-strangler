@@ -240,11 +240,14 @@ class SMTPRequests(GenericLinesIn):
         if self.__want_data:
             self.__want_data = False
             if message.lower().startswith('354 '):
-                self.safe_to_munge = False
                 self.__in_data = True
             else:
-                self.safe_to_munge = True
                 self.__in_data = False
+
+        if self.__in_data:
+            self.safe_to_munge = False
+        else:
+            self.safe_to_munge = True
 
     def report_messages(self, callback):
         self.__report_message_callback = callback

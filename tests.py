@@ -12,5 +12,6 @@ class TestStrangler(unittest.TestCase):
         requests = SMTPRequests(ProtocolLogger(-1), -2, -3)
         self.assertEqual(1, 1)
 
+
 if __name__ == '__main__':
     unittest.main()

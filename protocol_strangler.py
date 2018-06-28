@@ -5,7 +5,7 @@ from protocol_proxied import ProtocolProxied
 from protocol_smtp import SMTPRequests, SMTPResponses
 
 
-class ProtocolStrangler:
+class SMTPProtocolStrangler:
     def __init__(self, from_client, to_client):
         (self.from_client, self.to_client) = (from_client, to_client)
         (self.from_proxy, self.to_server) = os.pipe()

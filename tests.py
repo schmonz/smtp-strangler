@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
-from smtp_strangler import ProtocolLogger, SMTPRequests
+from protocol_logger import ProtocolLogger
+from protocol_smtp import SMTPRequests
 
 import unittest
+
 
 class TestStrangler(unittest.TestCase):
 

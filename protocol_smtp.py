@@ -151,8 +151,16 @@ class SMTPResponses(ProtocolLinesIn):
     def get_log_prefix():
         return b'SMTP response<'
 
+    @staticmethod
+    def __is_one_ordinary_space(char):
+        one_ordinary_space = ord(b' ')
+        try:
+            return one_ordinary_space == ord(char)
+        except TypeError:
+            return one_ordinary_space == char
+
     def is_last_line_of_protocol_message(self, line):
-        return len(line) >= 4 and b' ' == line[3]
+        return len(line) >= 4 and self.__is_one_ordinary_space(line[3])
 
     def log_disconnect(self):
         self.logger.log(b'[server dropped connection]\r\n')

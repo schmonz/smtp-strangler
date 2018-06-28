@@ -4,7 +4,7 @@ import os
 import sys
 
 from protocol_logger import ProtocolLogger
-from protocol_strangler import SMTPProtocolStrangler
+from smtp_protocol_strangler import SMTPProtocolStrangler
 
 
 def die_usage(logger):

@@ -97,6 +97,15 @@ class SMTPRequests(ProtocolLinesIn):
     def log_disconnect(self):
         self.logger.log(b'[client dropped connection]\r\n')
 
+    @staticmethod
+    def __extract_verb_and_arg(message):
+        message = message.rstrip(b'\r\n')
+        try:
+            (verb, arg) = message.split(b' ', 1)
+        except ValueError:
+            (verb, arg) = (message, b'')
+        return (verb, arg)
+
     def munge_message(self, message):
         if self.report_message_callback:
             self.report_message_callback(message)
@@ -104,14 +113,15 @@ class SMTPRequests(ProtocolLinesIn):
         if not self.safe_to_munge:
             return message
 
-        munged_message = message.rstrip(b'\r\n')
-        # XXX verb only
-        if munged_message.lower().startswith(b'word '):
-            munged_message = b'noop ' + munged_message
-        elif munged_message.lower().startswith(b'brxt '):
-            munged_message = b'quit'
-        munged_message += b'\r\n'
-        return munged_message
+        (verb, arg) = self.__extract_verb_and_arg(message)
+
+        if verb.lower() == b'WORD':
+            arg = verb + b' ' + arg
+            verb = b'NOOP'
+        elif verb.lower() == b'BRXT':
+            verb = b'QUIT'
+
+        return verb + b' ' + arg + b'\r\n'
 
     def receive_message(self, message):
         if self.__want_data:
@@ -140,10 +150,16 @@ class SMTPResponses(ProtocolLinesIn):
     @staticmethod
     def __reformat_multiline_response(message):
         reformatted = b''
+
+        index = 3
+        continues = b'-'
+        ends = b' '
+
         lines = message.splitlines(True)
         for line in lines[:-1]:
-            reformatted += line[:3] + b'-' + line[4:]
-        reformatted += lines[-1][:3] + b' ' + lines[-1][4:]
+            reformatted += line[:index] + continues + line[1+index:]
+        reformatted += lines[-1][:index] + ends + lines[-1][1+index:]
+
         return reformatted
 
     def close(self):
@@ -183,7 +199,7 @@ class SMTPResponses(ProtocolLinesIn):
 
     def receive_message(self, message):
         try:
-            (verb, arg) = message.split(b' ')
+            (verb, arg) = message.split(b' ', 1)
         except ValueError:
             (verb, arg) = (message.rstrip(b'\r\n'), b'')
 

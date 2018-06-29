@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from protocol_logger import ProtocolLogger
-from protocol_smtp import SMTPRequests
+from protocol_smtp_requests import SMTPRequests
 
 import unittest
 

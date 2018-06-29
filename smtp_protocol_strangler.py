@@ -2,9 +2,11 @@ import os
 
 from protocol_proxy import ProtocolProxy
 from protocol_proxied import ProtocolProxied
-from protocol_smtp import SMTPRequests, SMTPResponses
+from protocol_smtp_requests import SMTPRequests
+from protocol_smtp_responses import SMTPResponses
 
 
+# XXX generalize to ProtocolStrangler
 class SMTPProtocolStrangler:
     def __init__(self, from_client, to_client):
         (self.from_client, self.to_client) = (from_client, to_client)
@@ -20,6 +22,7 @@ class SMTPProtocolStrangler:
 
     def strangle_and_exit(self, logger, command_line_arguments):
         if self.child_process_id:
+            # XXX pass in as params (or maybe implement in SMTP subclass)
             requests = SMTPRequests(logger, self.from_client, self.to_server)
             responses = SMTPResponses(logger, self.from_server, self.to_client)
             requests.report_messages(responses.receive_message)

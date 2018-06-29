@@ -1,15 +1,6 @@
 import os
 
 
-def extract_verb_and_arg(request):
-    request = request.rstrip(b'\r\n')
-    try:
-        (verb, arg) = request.split(b' ', 1)
-    except ValueError:
-        (verb, arg) = (request, b'')
-    return (verb, arg)
-
-
 class ProtocolLinesIn:
     def __init__(self, logger, read_from_fd, write_to_fd):
         self.logger = logger
@@ -113,7 +104,7 @@ class SMTPRequests(ProtocolLinesIn):
         if not self.safe_to_munge:
             return message
 
-        (verb, arg) = extract_verb_and_arg(message)
+        (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
 
         if verb.upper() == b'WORD':
             arg = verb + b' ' + arg
@@ -198,7 +189,20 @@ class SMTPResponses(ProtocolLinesIn):
         return message
 
     def receive_message(self, message):
-        (verb, arg) = extract_verb_and_arg(message)
+        (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
 
         if verb.lower() == b'ehlo':
             self.__should_munge_ehlo = True
+
+
+class SMTPRequestParser:
+    def __init__(self, request):
+        self.request = request
+        request = request.rstrip(b'\r\n')
+        try:
+            (self.verb, self.arg) = request.split(b' ', 1)
+        except ValueError:
+            (self.verb, self.arg) = (request, b'')
+
+    def get_verb_and_arg(self):
+        return (self.verb, self.arg)

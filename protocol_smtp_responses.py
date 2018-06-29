@@ -11,12 +11,12 @@ class SMTPResponses(ProtocolLinesIn):
         self.__should_munge_ehlo = False
         self.safe_to_munge = True
 
-    @staticmethod
-    def __munge_conf(message):
-        return b'250 https://www.spaconference.org/spa2018/\r\n'
+    def __munge_conf(self, message):
+        self.__should_munge_conf = False
+        return b'250-https://www.spaconference.org/spa2018/\r\n'
 
-    @staticmethod
-    def __munge_ehlo(message):
+    def __munge_ehlo(self, message):
+        self.__should_munge_ehlo = False
         return message + b'250 GDPR 20160414\r\n'
 
     @staticmethod
@@ -64,11 +64,9 @@ class SMTPResponses(ProtocolLinesIn):
 
         if self.__should_munge_conf:
             message = self.__munge_conf(message)
-            self.__should_munge_conf = False
 
         if self.__should_munge_ehlo:
             message = self.__munge_ehlo(message)
-            self.__should_munge_ehlo = False
 
         message = self.__reformat_multiline_response(message)
         return message
@@ -76,7 +74,7 @@ class SMTPResponses(ProtocolLinesIn):
     def receive_message(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
 
-        if verb.lower() == b'conf':
+        if verb.upper() == b'CONF':
             self.__should_munge_conf = True
-        elif verb.lower() == b'ehlo':
+        elif verb.upper() == b'EHLO':
             self.__should_munge_ehlo = True

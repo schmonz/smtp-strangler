@@ -16,7 +16,7 @@ class SMTPRequests(ProtocolLinesIn):
         return (verb, arg)
 
     @staticmethod
-    def __munge_word(verb, arg):
+    def __munge_noop(verb, arg):
         arg = verb + b' ' + arg
         verb = b'NOOP'
         return (verb, arg)
@@ -47,7 +47,8 @@ class SMTPRequests(ProtocolLinesIn):
 
         munge_functions = {
             b'BRXT': self.__munge_brxt,
-            b'WORD': self.__munge_word,
+            b'CONF': self.__munge_noop,
+            b'WORD': self.__munge_noop,
         }
         try:
             function = munge_functions[verb.upper()]

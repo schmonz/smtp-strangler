@@ -7,8 +7,13 @@ from protocol_smtp_request_parser import SMTPRequestParser
 class SMTPResponses(ProtocolLinesIn):
     def __init__(self, logger, read_from_fd, write_to_fd):
         ProtocolLinesIn.__init__(self, logger, read_from_fd, write_to_fd)
+        self.__should_munge_conf = False
         self.__should_munge_ehlo = False
         self.safe_to_munge = True
+
+    @staticmethod
+    def __munge_conf(message):
+        return b'250 https://www.spaconference.org/spa2018/\r\n'
 
     @staticmethod
     def __munge_ehlo(message):
@@ -57,6 +62,10 @@ class SMTPResponses(ProtocolLinesIn):
         if not self.safe_to_munge:
             return message
 
+        if self.__should_munge_conf:
+            message = self.__munge_conf(message)
+            self.__should_munge_conf = False
+
         if self.__should_munge_ehlo:
             message = self.__munge_ehlo(message)
             self.__should_munge_ehlo = False
@@ -67,5 +76,7 @@ class SMTPResponses(ProtocolLinesIn):
     def receive_message(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
 
-        if verb.lower() == b'ehlo':
+        if verb.lower() == b'conf':
+            self.__should_munge_conf = True
+        elif verb.lower() == b'ehlo':
             self.__should_munge_ehlo = True

@@ -46,10 +46,15 @@ class SMTPRequests(ProtocolLinesIn):
 
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
 
-        if verb.upper() == b'WORD':
-            (verb, arg) = self.__munge_word(verb, arg)
-        elif verb.upper() == b'BRXT':
-            (verb, arg) = self.__munge_brxt(verb, arg)
+        munge_functions = {
+            b'BRXT': self.__munge_brxt,
+            b'WORD': self.__munge_word,
+        }
+        try:
+            function = munge_functions[verb.upper()]
+            (verb, arg) = function(verb, arg)
+        except KeyError:
+            pass
 
         return verb + b' ' + arg + b'\r\n'
 

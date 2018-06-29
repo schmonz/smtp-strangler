@@ -18,6 +18,11 @@ class TestStrangler(unittest.TestCase):
         (verb, arg) = parser.get_verb_and_arg()
         self.assertEqual(b'.', verb)
 
+    def test_verb_no_arg(self):
+        parser = SMTPRequestParser(b'BRXT\r\n')
+        (verb, arg) = parser.get_verb_and_arg()
+        self.assertEqual(b'BRXT', verb)
+
 
 if __name__ == '__main__':
     unittest.main()

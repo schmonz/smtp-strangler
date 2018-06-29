@@ -17,6 +17,14 @@ class TestStrangler(unittest.TestCase):
         parser = SMTPRequestParser(b'.\r\n')
         (verb, arg) = parser.get_verb_and_arg()
         self.assertEqual(b'.', verb)
+        self.assertEqual(b'', arg)
+
+    def test_munge_last_line_of_data(self):
+        requests = SMTPRequests(ProtocolLogger(-1), -2, -3)
+        requests.safe_to_munge = False
+        last_line_of_data = b'.\r\n'
+        munged = requests.munge_message(last_line_of_data)
+        self.assertEqual(last_line_of_data, munged)
 
     def test_verb_no_arg(self):
         parser = SMTPRequestParser(b'BRXT\r\n')

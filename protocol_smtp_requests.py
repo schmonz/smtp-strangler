@@ -7,9 +7,8 @@ from protocol_smtp_request_parser import SMTPRequestParser
 class SMTPRequests(ProtocolLinesIn):
     def __init__(self, logger, read_from_fd, write_to_fd):
         ProtocolLinesIn.__init__(self, logger, read_from_fd, write_to_fd)
-        self.__want_data = False
-        self.__in_data = False
-        self.safe_to_munge = False
+        self.want_data = False
+        self.safe_to_munge = True
 
     @staticmethod
     def __munge_brxt(verb, arg):
@@ -25,9 +24,9 @@ class SMTPRequests(ProtocolLinesIn):
     def is_last_line_of_protocol_message(self, line):
         (verb, arg) = SMTPRequestParser(line).get_verb_and_arg()
         if self.safe_to_munge and verb.upper() == b'DATA':
-            self.__want_data = True
-        if self.__in_data and verb == b'.':
-            self.safe_to_munge = True
+            self.want_data = True
+        if not self.safe_to_munge and verb == b'.':
+            self.want_data = False
         return True
 
     @staticmethod
@@ -59,14 +58,7 @@ class SMTPRequests(ProtocolLinesIn):
         return verb + b' ' + arg + b'\r\n'
 
     def receive_message(self, message):
-        if self.__want_data:
-            self.__want_data = False
-            if message.lower().startswith(b'354 '):
-                self.__in_data = True
-            else:
-                self.__in_data = False
-
-        if self.__in_data:
+        if self.want_data and message.lower().startswith(b'354 '):
             self.safe_to_munge = False
         else:
             self.safe_to_munge = True

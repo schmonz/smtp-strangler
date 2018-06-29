@@ -1,6 +1,15 @@
 import os
 
 
+def extract_verb_and_arg(request):
+    request = request.rstrip(b'\r\n')
+    try:
+        (verb, arg) = request.split(b' ', 1)
+    except ValueError:
+        (verb, arg) = (request, b'')
+    return (verb, arg)
+
+
 class ProtocolLinesIn:
     def __init__(self, logger, read_from_fd, write_to_fd):
         self.logger = logger
@@ -97,15 +106,6 @@ class SMTPRequests(ProtocolLinesIn):
     def log_disconnect(self):
         self.logger.log(b'[client dropped connection]\r\n')
 
-    @staticmethod
-    def __extract_verb_and_arg(message):
-        message = message.rstrip(b'\r\n')
-        try:
-            (verb, arg) = message.split(b' ', 1)
-        except ValueError:
-            (verb, arg) = (message, b'')
-        return (verb, arg)
-
     def munge_message(self, message):
         if self.report_message_callback:
             self.report_message_callback(message)
@@ -113,12 +113,12 @@ class SMTPRequests(ProtocolLinesIn):
         if not self.safe_to_munge:
             return message
 
-        (verb, arg) = self.__extract_verb_and_arg(message)
+        (verb, arg) = extract_verb_and_arg(message)
 
-        if verb.lower() == b'WORD':
+        if verb.upper() == b'WORD':
             arg = verb + b' ' + arg
             verb = b'NOOP'
-        elif verb.lower() == b'BRXT':
+        elif verb.upper() == b'BRXT':
             verb = b'QUIT'
 
         return verb + b' ' + arg + b'\r\n'
@@ -198,10 +198,7 @@ class SMTPResponses(ProtocolLinesIn):
         return message
 
     def receive_message(self, message):
-        try:
-            (verb, arg) = message.split(b' ', 1)
-        except ValueError:
-            (verb, arg) = (message.rstrip(b'\r\n'), b'')
+        (verb, arg) = extract_verb_and_arg(message)
 
         if verb.lower() == b'ehlo':
             self.__should_munge_ehlo = True

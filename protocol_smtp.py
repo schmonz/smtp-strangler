@@ -108,6 +108,8 @@ class SMTPRequests(ProtocolLinesIn):
         # XXX verb only
         if munged_message.lower().startswith(b'word '):
             munged_message = b'noop ' + munged_message
+        elif munged_message.lower().startswith(b'brxt '):
+            munged_message = b'quit'
         munged_message += b'\r\n'
         return munged_message
 

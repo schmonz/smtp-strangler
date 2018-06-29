@@ -11,11 +11,22 @@ class SMTPRequests(ProtocolLinesIn):
         self.__in_data = False
         self.safe_to_munge = False
 
+    @staticmethod
+    def __munge_brxt(verb, arg):
+        verb = b'QUIT'
+        return (verb, arg)
+
+    @staticmethod
+    def __munge_word(verb, arg):
+        arg = verb + b' ' + arg
+        verb = b'NOOP'
+        return (verb, arg)
+
     def is_last_line_of_protocol_message(self, line):
-        # XXX verb only
-        if self.safe_to_munge and line.lower() == b'data\r\n':
+        (verb, arg) = SMTPRequestParser(line).get_verb_and_arg()
+        if self.safe_to_munge and verb.upper() == b'DATA':
             self.__want_data = True
-        if self.__in_data and line == b'.\r\n':
+        if self.__in_data and verb == b'.':
             self.safe_to_munge = True
         return True
 
@@ -36,10 +47,9 @@ class SMTPRequests(ProtocolLinesIn):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
 
         if verb.upper() == b'WORD':
-            arg = verb + b' ' + arg
-            verb = b'NOOP'
+            (verb, arg) = self.__munge_word(verb, arg)
         elif verb.upper() == b'BRXT':
-            verb = b'QUIT'
+            (verb, arg) = self.__munge_brxt(verb, arg)
 
         return verb + b' ' + arg + b'\r\n'
 

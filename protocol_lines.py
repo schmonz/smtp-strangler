@@ -29,16 +29,18 @@ class ProtocolLinesIn:
         return (first_line, leftovers)
 
     def close(self):
-        os.close(self.get_write_fd())
+        os.close(self.write_fd)
 
     @staticmethod
     def get_log_prefix():
         return b'protocol-line>'
 
-    def get_read_fd(self):
+    @property
+    def read_fd(self):
         return self.__read_from_fd
 
-    def get_write_fd(self):
+    @property
+    def write_fd(self):
         return self.__write_to_fd
 
     def has_whole_message(self):

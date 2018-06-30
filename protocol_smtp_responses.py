@@ -35,7 +35,7 @@ class SMTPResponses(ProtocolLinesIn):
         return reformatted
 
     def close(self):
-        os.close(self.get_read_fd())
+        os.close(self.read_fd)
 
     @staticmethod
     def get_log_prefix():

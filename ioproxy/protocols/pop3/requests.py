@@ -1,6 +1,6 @@
 import os
 
-from protocol_lines import ProtocolLinesIn
+from ioproxy.protocols.lines.lines import ProtocolLinesIn
 
 
 class POP3Requests(ProtocolLinesIn):

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from protocol_logger import ProtocolLogger
-from protocol_smtp_requests import SMTPRequests
-from protocol_smtp_request_parser import SMTPRequestParser
+from ioproxy.logger import ProtocolLogger
+from ioproxy.protocols.smtp.requests import SMTPRequests
+from ioproxy.protocols.smtp.request_parser import SMTPRequestParser
 
 import unittest
 

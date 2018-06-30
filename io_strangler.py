@@ -3,8 +3,8 @@
 import os
 import sys
 
-from protocol_logger import ProtocolLogger
-from pop3_protocol_strangler import POP3ProtocolStrangler
+from ioproxy.logger import ProtocolLogger
+from ioproxy.protocols.pop3.strangler import POP3ProtocolStrangler
 
 
 def die_usage(logger):

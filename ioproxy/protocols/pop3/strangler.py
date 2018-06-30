@@ -1,13 +1,12 @@
 import os
 
-from protocol_proxy import ProtocolProxy
-from protocol_proxied import ProtocolProxied
-from protocol_smtp_requests import SMTPRequests
-from protocol_smtp_responses import SMTPResponses
+from ioproxy.proxy import ProtocolProxy
+from ioproxy.proxied import ProtocolProxied
+from ioproxy.protocols.pop3.requests import POP3Requests
+from ioproxy.protocols.pop3.responses import POP3Responses
 
 
-# XXX generalize to ProtocolStrangler
-class SMTPProtocolStrangler:
+class POP3ProtocolStrangler:
     def __init__(self, from_client, to_client):
         (self.from_client, self.to_client) = (from_client, to_client)
         (self.from_proxy, self.to_server) = os.pipe()
@@ -22,11 +21,9 @@ class SMTPProtocolStrangler:
 
     def strangle_and_exit(self, logger, command_line_arguments):
         if self.child_process_id:
-            # XXX pass in as params (or maybe implement in SMTP subclass)
-            requests = SMTPRequests(logger, self.from_client, self.to_server)
-            responses = SMTPResponses(logger, self.from_server, self.to_client)
+            requests = POP3Requests(logger, self.from_client, self.to_server)
+            responses = POP3Responses(logger, self.from_server, self.to_client)
             requests.report_messages(responses.receive_message)
-            responses.report_messages(requests.receive_message)
             proxy = ProtocolProxy([
                 requests,
                 responses,

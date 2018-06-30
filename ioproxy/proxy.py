@@ -1,7 +1,7 @@
 import os
 import sys
 
-from protocol_buffer_list import ProtocolBufferList
+from ioproxy.buffer_list import ProtocolBufferList
 
 
 class ProtocolProxy:

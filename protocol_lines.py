@@ -13,14 +13,20 @@ class ProtocolLinesIn:
 
         self.report_message_callback = None
 
-    def __accumulate(self, some_bytes):
+    def __accumulate_bytes(self, some_bytes):
         self.__bytes += some_bytes
         while b'\n' in self.__bytes:
             (line, self.__bytes) = self.__extract_first_line(self.__bytes)
-            self.__protocol_message += line
+            self.__accumulate_message_lines(line)
             if self.is_last_line_of_protocol_message(line):
-                self.__protocol_messages.append(self.__protocol_message)
-                self.__protocol_message = b''
+                self.__queue_message()
+
+    def __accumulate_message_lines(self, line):
+        self.__protocol_message += line
+
+    def __queue_message(self):
+        self.__protocol_messages.append(self.__protocol_message)
+        self.__protocol_message = b''
 
     @staticmethod
     def __extract_first_line(possibly_multiline):
@@ -58,7 +64,7 @@ class ProtocolLinesIn:
     def read(self, read_length):
         some_bytes = os.read(self.__read_from_fd, read_length)
         if some_bytes:
-            self.__accumulate(some_bytes)
+            self.__accumulate_bytes(some_bytes)
             return True
         else:
             self.log_disconnect()

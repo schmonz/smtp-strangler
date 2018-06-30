@@ -4,7 +4,7 @@ import os
 import sys
 
 from protocol_logger import ProtocolLogger
-from smtp_protocol_strangler import SMTPProtocolStrangler
+from pop3_protocol_strangler import POP3ProtocolStrangler
 
 
 def die_usage(logger):
@@ -26,7 +26,7 @@ def main(command_line_arguments):
         die_usage(logger)
 
     try:
-        SMTPProtocolStrangler(
+        POP3ProtocolStrangler(
             sys.stdin.fileno(),
             sys.stdout.fileno(),
         ).strangle_and_exit(logger, command_line_arguments)

@@ -2,7 +2,7 @@
 
 This is an implementation of the
 [Strangler pattern](https://martinfowler.com/bliki/StranglerApplication.html)
-for any SMTP server program that can run under
+for any SMTP or POP3 server program that can run under
 [inetd(8)](https://wiki.netbsd.org/guide/inetd/)
 or
 [tcpserver(1)](https://cr.yp.to/ucspi-tcp/tcpserver.html).
@@ -10,7 +10,7 @@ or
 In this environment, client requests arrive on `stdin` and server
 responses go to `stdout`.
 
-`smtp-strangler` sits in the command chain just before the SMTP
+`io_strangler.py` sits in the command chain just before the
 server program. It passes requests to the server and returns responses
 to the client. This is pretty boring. But since it's written in Python,
 it's pretty easy to start handling certain requests in a new way.

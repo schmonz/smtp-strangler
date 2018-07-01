@@ -5,11 +5,12 @@ import sys
 
 from ioproxy.logger import ProtocolLogger
 from ioproxy.protocols.pop3.strangler import POP3ProtocolStrangler
+from ioproxy.protocols.smtp.strangler import SMTPProtocolStrangler
 
 
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
-    logger.log(b'usage: ' + this_program +
+    logger.log(b'usage: ' + this_program + b' <pop3|smtp>' +
                b' program-to-strangle [ arg ... ]\r\n')
     sys.exit(99)
 
@@ -24,12 +25,23 @@ def main(command_line_arguments):
 
     if not command_line_arguments:
         die_usage(logger)
+    protocol = command_line_arguments.pop(0)
+    if not command_line_arguments:
+        die_usage(logger)
 
     try:
-        POP3ProtocolStrangler(
-            sys.stdin.fileno(),
-            sys.stdout.fileno(),
-        ).strangle_and_exit(logger, command_line_arguments)
+        if protocol == 'pop3':
+            POP3ProtocolStrangler(
+                sys.stdin.fileno(),
+                sys.stdout.fileno(),
+            ).strangle_and_exit(logger, command_line_arguments)
+        elif protocol == 'smtp':
+            SMTPProtocolStrangler(
+                sys.stdin.fileno(),
+                sys.stdout.fileno(),
+            ).strangle_and_exit(logger, command_line_arguments)
+        else:
+            die_usage(logger)
     except KeyboardInterrupt:
         die_interrupt(logger)
 

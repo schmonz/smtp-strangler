@@ -1,8 +1,8 @@
 ## Feature ideas
 
+- Make `BRXT` a synonym for `QUIT`
 - Add `CONF` verb that returns `250 https://www.spaconference.org/spa2018/`
 - Append `GDPR 20160414` to `EHLO` output
-- Make `BRXT` a synonym for `QUIT`
 - Reject mail from Tim
 
 

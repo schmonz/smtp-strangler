@@ -33,7 +33,7 @@ def main(command_line_arguments):
             logger,
             sys.stdin.fileno(),
             sys.stdout.fileno(),
-        ).find_strangler(protocol).strangle_and_exit(command_line_arguments)
+        ).find_strangler(protocol).strangle_and_exit(77, command_line_arguments)
     except KeyError:
         die_usage(logger)
     except KeyboardInterrupt:

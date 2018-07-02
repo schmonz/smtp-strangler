@@ -8,7 +8,7 @@ class StranglerFactory:
         self.input_fd = input_fd
         self.output_fd = output_fd
 
-    def find_strangler(self, protocol):
+    def create(self, protocol):
         strangler_for = {
             'POP3': POP3Strangler,
             'SMTP': SMTPStrangler,

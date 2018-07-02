@@ -1,9 +1,9 @@
 import os
 
-from ioproxy.lines.lines import ProtocolLinesIn
+from ioproxy.lines import LinesIn
 
 
-class POP3Requests(ProtocolLinesIn):
+class POP3Requests(LinesIn):
     def is_last_line_of_protocol_message(self, line):
         return True
 

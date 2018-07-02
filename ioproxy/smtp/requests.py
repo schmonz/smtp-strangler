@@ -1,12 +1,12 @@
 import os
 
-from ioproxy.lines.lines import ProtocolLinesIn
+from ioproxy.lines import LinesIn
 from ioproxy.smtp.request_parser import SMTPRequestParser
 
 
-class SMTPRequests(ProtocolLinesIn):
+class SMTPRequests(LinesIn):
     def __init__(self, logger, read_from_fd, write_to_fd):
-        ProtocolLinesIn.__init__(self, logger, read_from_fd, write_to_fd)
+        LinesIn.__init__(self, logger, read_from_fd, write_to_fd)
         self.want_data = False
         self.safe_to_munge = True
 

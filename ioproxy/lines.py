@@ -1,7 +1,7 @@
 import os
 
 
-class ProtocolLinesIn:
+class LinesIn:
     def __init__(self, logger, read_from_fd, write_to_fd):
         self.logger = logger
         self.__read_from_fd = read_from_fd

@@ -18,7 +18,7 @@ class AbstractStrangler:
             os.close(self.to_server)
         self.proxy = None
 
-    def strangle_and_exit(self, read_size, command_line_arguments):
+    def strangle(self, read_size, command_line_arguments):
         if self.child_process_id:
             self.proxy.proxy_and_exit(self.child_process_id, read_size)
         else:

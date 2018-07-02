@@ -29,11 +29,11 @@ def main(command_line_arguments):
         die_usage(logger)
 
     try:
-        strangler = StranglerFactory(
+        StranglerFactory(
             logger,
             sys.stdin.fileno(),
             sys.stdout.fileno(),
-        ).create(protocol).strangle_and_exit(77, command_line_arguments)
+        ).create(protocol).strangle(77, command_line_arguments)
     except KeyError:
         die_usage(logger)
     except KeyboardInterrupt:

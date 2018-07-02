@@ -75,9 +75,9 @@ class LinesIn:
 
     def send(self):
         message = self.__messages.pop(0)
-        self.logger.log(b'       ' + self.get_log_prefix() +
+        self.logger.log(b'          ' + self.get_log_prefix() +
                         b' ' + message)
         munged_message = self.munge_message(message)
-        self.logger.log(b'munged-' + self.get_log_prefix() +
+        self.logger.log(b'strangler-' + self.get_log_prefix() +
                         b' ' + munged_message + b'\r\n')
         os.write(self.__write_to_fd, munged_message)

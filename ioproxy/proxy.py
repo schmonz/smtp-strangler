@@ -4,7 +4,7 @@ import sys
 from ioproxy.read_buffers import ReadBuffers
 
 
-class ProtocolProxy:
+class Proxy:
     def __init__(self, buffers):
         self.__buffers = ReadBuffers(buffers)
 

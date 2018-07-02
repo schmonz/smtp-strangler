@@ -1,7 +1,7 @@
 import os
 
-from ioproxy.proxy import ProtocolProxy
-from ioproxy.proxied import ProtocolProxied
+from ioproxy.proxy import Proxy
+from ioproxy.proxied import Proxied
 from ioproxy.pop3.requests import POP3Requests
 from ioproxy.pop3.responses import POP3Responses
 
@@ -24,13 +24,13 @@ class POP3Strangler:
             requests = POP3Requests(logger, self.from_client, self.to_server)
             responses = POP3Responses(logger, self.from_server, self.to_client)
             requests.report_messages(responses.receive_message)
-            proxy = ProtocolProxy([
+            proxy = Proxy([
                 requests,
                 responses,
             ])
             proxy.proxy_and_exit(self.child_process_id, 77)
         else:
-            ProtocolProxied(
+            Proxied(
                 self.from_client, self.to_proxy,
                 self.from_proxy, self.to_client,
             ).exec_and_exit(logger, command_line_arguments)

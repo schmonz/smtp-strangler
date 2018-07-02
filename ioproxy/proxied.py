@@ -1,7 +1,7 @@
 import os
 
 
-class ProtocolProxied:
+class Proxied:
     def __init__(self, from_client, to_proxy, from_proxy, to_client):
         os.dup2(from_proxy, from_client)
         os.dup2(to_proxy, to_client)

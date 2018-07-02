@@ -1,7 +1,7 @@
 import os
 
 
-class ProtocolLogger:
+class Logger:
     def __init__(self, fd):
         self.__fd = fd
 

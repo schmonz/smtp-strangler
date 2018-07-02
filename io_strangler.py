@@ -3,7 +3,7 @@
 import os
 import sys
 
-from ioproxy.logger import ProtocolLogger
+from ioproxy.logger import Logger
 from ioproxy.protocols.pop3.strangler import POP3ProtocolStrangler
 from ioproxy.protocols.smtp.strangler import SMTPProtocolStrangler
 
@@ -21,7 +21,7 @@ def die_interrupt(logger):
 
 
 def main(command_line_arguments):
-    logger = ProtocolLogger(sys.stderr.fileno())
+    logger = Logger(sys.stderr.fileno())
 
     if not command_line_arguments:
         die_usage(logger)

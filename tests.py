@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ioproxy.logger import ProtocolLogger
+from ioproxy.logger import Logger
 from ioproxy.protocols.smtp.requests import SMTPRequests
 from ioproxy.protocols.smtp.request_parser import SMTPRequestParser
 
@@ -10,7 +10,7 @@ import unittest
 class TestStrangler(unittest.TestCase):
 
     def test_whole_request(self):
-        requests = SMTPRequests(ProtocolLogger(-1), -2, -3)
+        requests = SMTPRequests(Logger(-1), -2, -3)
         self.assertEqual(1, 1)
 
     def test_last_line_of_data(self):
@@ -20,7 +20,7 @@ class TestStrangler(unittest.TestCase):
         self.assertEqual(b'', arg)
 
     def test_munge_last_line_of_data(self):
-        requests = SMTPRequests(ProtocolLogger(-1), -2, -3)
+        requests = SMTPRequests(Logger(-1), -2, -3)
         requests.safe_to_munge = False
         last_line_of_data = b'.\r\n'
         munged = requests.munge_message(last_line_of_data)

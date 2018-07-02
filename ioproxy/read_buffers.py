@@ -1,7 +1,7 @@
 import select
 
 
-class ProtocolBufferList:
+class ReadBuffers:
     def __init__(self, buffer_list):
         self.__buffer_list = buffer_list
         self.__fd_list = []

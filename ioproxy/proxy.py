@@ -1,12 +1,12 @@
 import os
 import sys
 
-from ioproxy.buffer_list import ProtocolBufferList
+from ioproxy.read_buffers import ReadBuffers
 
 
 class ProtocolProxy:
     def __init__(self, buffers):
-        self.__buffers = ProtocolBufferList(buffers)
+        self.__buffers = ReadBuffers(buffers)
 
     @staticmethod
     def __await_child_exitcode(child):

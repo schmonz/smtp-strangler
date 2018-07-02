@@ -32,14 +32,16 @@ def main(command_line_arguments):
     try:
         if protocol == 'pop3':
             POP3Strangler(
+                logger,
                 sys.stdin.fileno(),
                 sys.stdout.fileno(),
-            ).strangle_and_exit(logger, command_line_arguments)
+            ).strangle_and_exit(command_line_arguments)
         elif protocol == 'smtp':
             SMTPStrangler(
+                logger,
                 sys.stdin.fileno(),
                 sys.stdout.fileno(),
-            ).strangle_and_exit(logger, command_line_arguments)
+            ).strangle_and_exit(command_line_arguments)
         else:
             die_usage(logger)
     except KeyboardInterrupt:

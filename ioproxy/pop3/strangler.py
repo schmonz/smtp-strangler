@@ -1,36 +1,16 @@
 import os
 
-from ioproxy.proxy import Proxy
-from ioproxy.proxied import Proxied
+from ioproxy.abstract_strangler import AbstractStrangler
 from ioproxy.pop3.requests import POP3Requests
 from ioproxy.pop3.responses import POP3Responses
+from ioproxy.proxy import Proxy
 
 
-class POP3Strangler:
-    def __init__(self, from_client, to_client):
-        (self.from_client, self.to_client) = (from_client, to_client)
-        (self.from_proxy, self.to_server) = os.pipe()
-        (self.from_server, self.to_proxy) = os.pipe()
-        self.child_process_id = os.fork()
-        if self.child_process_id:
-            os.close(self.from_proxy)
-            os.close(self.to_proxy)
-        else:
-            os.close(self.from_server)
-            os.close(self.to_server)
+class POP3Strangler(AbstractStrangler):
+    def __init__(self, logger, from_client, to_client):
+        AbstractStrangler.__init__(self, logger, from_client, to_client)
 
-    def strangle_and_exit(self, logger, command_line_arguments):
-        if self.child_process_id:
-            requests = POP3Requests(logger, self.from_client, self.to_server)
-            responses = POP3Responses(logger, self.from_server, self.to_client)
-            requests.report_messages(responses.receive_message)
-            proxy = Proxy([
-                requests,
-                responses,
-            ])
-            proxy.proxy_and_exit(self.child_process_id, 77)
-        else:
-            Proxied(
-                self.from_client, self.to_proxy,
-                self.from_proxy, self.to_client,
-            ).exec_and_exit(logger, command_line_arguments)
+        requests = POP3Requests(logger, self.from_client, self.to_server)
+        responses = POP3Responses(logger, self.from_server, self.to_client)
+        requests.report_messages(responses.receive_message)
+        self.proxy = Proxy([requests, responses])

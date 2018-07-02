@@ -16,7 +16,7 @@ class POP3Responses(LinesIn):
     def get_log_prefix():
         return b'POP3 response<'
 
-    def is_last_line_of_protocol_message(self, line):
+    def is_last_line_of_message(self, line):
         if self.expect_multiline_response:
             if line.upper().startswith(b'-ERR ') or line == b'.\r\n':
                 self.expect_multiline_response = False

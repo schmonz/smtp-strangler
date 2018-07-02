@@ -4,7 +4,7 @@ from ioproxy.lines import LinesIn
 
 
 class POP3Requests(LinesIn):
-    def is_last_line_of_protocol_message(self, line):
+    def is_last_line_of_message(self, line):
         return True
 
     @staticmethod

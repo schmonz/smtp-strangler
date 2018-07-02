@@ -21,7 +21,7 @@ class SMTPRequests(LinesIn):
         verb = b'NOOP'
         return (verb, arg)
 
-    def is_last_line_of_protocol_message(self, line):
+    def is_last_line_of_message(self, line):
         (verb, arg) = SMTPRequestParser(line).get_verb_and_arg()
         if self.safe_to_munge and verb.upper() == b'DATA':
             self.want_data = True

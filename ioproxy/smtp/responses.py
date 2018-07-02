@@ -49,7 +49,7 @@ class SMTPResponses(LinesIn):
         except TypeError:
             return one_ordinary_space == char
 
-    def is_last_line_of_protocol_message(self, line):
+    def is_last_line_of_message(self, line):
         return len(line) >= 4 and self.__is_one_ordinary_space(line[3])
 
     def log_disconnect(self):

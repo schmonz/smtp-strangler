@@ -8,8 +8,8 @@ class LinesIn:
         self.__write_to_fd = write_to_fd
 
         self.__bytes = b''
-        self.__protocol_message = b''
-        self.__protocol_messages = []
+        self.__message = b''
+        self.__messages = []
 
         self.report_message_callback = None
 
@@ -18,15 +18,15 @@ class LinesIn:
         while b'\n' in self.__bytes:
             (line, self.__bytes) = self.__extract_first_line(self.__bytes)
             self.__accumulate_message_lines(line)
-            if self.is_last_line_of_protocol_message(line):
+            if self.is_last_line_of_message(line):
                 self.__queue_message()
 
     def __accumulate_message_lines(self, line):
-        self.__protocol_message += line
+        self.__message += line
 
     def __queue_message(self):
-        self.__protocol_messages.append(self.__protocol_message)
-        self.__protocol_message = b''
+        self.__messages.append(self.__message)
+        self.__message = b''
 
     @staticmethod
     def __extract_first_line(possibly_multiline):
@@ -39,7 +39,7 @@ class LinesIn:
 
     @staticmethod
     def get_log_prefix():
-        return b'protocol-line>'
+        return b'line>'
 
     @property
     def read_fd(self):
@@ -50,13 +50,13 @@ class LinesIn:
         return self.__write_to_fd
 
     def has_whole_message(self):
-        return len(self.__protocol_messages) > 0
+        return len(self.__messages) > 0
 
-    def is_last_line_of_protocol_message(self, line):
+    def is_last_line_of_message(self, line):
         return True
 
     def log_disconnect(self):
-        self.logger.log(b'[protocol-line dropped connection]\r\n')
+        self.logger.log(b'[line dropped connection]\r\n')
 
     def munge_message(self, message):
         return message
@@ -74,7 +74,7 @@ class LinesIn:
         self.report_message_callback = callback
 
     def send(self):
-        message = self.__protocol_messages.pop(0)
+        message = self.__messages.pop(0)
         self.logger.log(b'       ' + self.get_log_prefix() +
                         b' ' + message)
         munged_message = self.munge_message(message)

@@ -4,8 +4,8 @@ import os
 import sys
 
 from ioproxy.logger import Logger
-from ioproxy.protocols.pop3.strangler import POP3Strangler
-from ioproxy.protocols.smtp.strangler import SMTPStrangler
+from ioproxy.pop3.strangler import POP3Strangler
+from ioproxy.smtp.strangler import SMTPStrangler
 
 
 def die_usage(logger):

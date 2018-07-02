@@ -2,8 +2,8 @@ import os
 
 from ioproxy.proxy import ProtocolProxy
 from ioproxy.proxied import ProtocolProxied
-from ioproxy.protocols.smtp.requests import SMTPRequests
-from ioproxy.protocols.smtp.responses import SMTPResponses
+from ioproxy.smtp.requests import SMTPRequests
+from ioproxy.smtp.responses import SMTPResponses
 
 
 # XXX generalize to ProtocolStrangler

@@ -1,7 +1,7 @@
 import os
 
-from ioproxy.protocols.lines.lines import ProtocolLinesIn
-from ioproxy.protocols.smtp.request_parser import SMTPRequestParser
+from ioproxy.lines.lines import ProtocolLinesIn
+from ioproxy.smtp.request_parser import SMTPRequestParser
 
 
 class SMTPResponses(ProtocolLinesIn):

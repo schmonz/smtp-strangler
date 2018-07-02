@@ -2,8 +2,8 @@ import os
 
 from ioproxy.proxy import ProtocolProxy
 from ioproxy.proxied import ProtocolProxied
-from ioproxy.protocols.pop3.requests import POP3Requests
-from ioproxy.protocols.pop3.responses import POP3Responses
+from ioproxy.pop3.requests import POP3Requests
+from ioproxy.pop3.responses import POP3Responses
 
 
 class POP3Strangler:

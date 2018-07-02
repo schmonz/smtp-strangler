@@ -4,8 +4,7 @@ import os
 import sys
 
 from ioproxy.logger import Logger
-from ioproxy.pop3.strangler import POP3Strangler
-from ioproxy.smtp.strangler import SMTPStrangler
+from ioproxy.strangler_factory import StranglerFactory
 
 
 def die_usage(logger):
@@ -30,20 +29,13 @@ def main(command_line_arguments):
         die_usage(logger)
 
     try:
-        if protocol == 'pop3':
-            POP3Strangler(
-                logger,
-                sys.stdin.fileno(),
-                sys.stdout.fileno(),
-            ).strangle_and_exit(command_line_arguments)
-        elif protocol == 'smtp':
-            SMTPStrangler(
-                logger,
-                sys.stdin.fileno(),
-                sys.stdout.fileno(),
-            ).strangle_and_exit(command_line_arguments)
-        else:
-            die_usage(logger)
+        strangler = StranglerFactory(
+            logger,
+            sys.stdin.fileno(),
+            sys.stdout.fileno(),
+        ).find_strangler(protocol).strangle_and_exit(command_line_arguments)
+    except KeyError:
+        die_usage(logger)
     except KeyboardInterrupt:
         die_interrupt(logger)
 

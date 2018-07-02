@@ -7,7 +7,7 @@ from ioproxy.protocols.smtp.responses import SMTPResponses
 
 
 # XXX generalize to ProtocolStrangler
-class SMTPProtocolStrangler:
+class SMTPStrangler:
     def __init__(self, from_client, to_client):
         (self.from_client, self.to_client) = (from_client, to_client)
         (self.from_proxy, self.to_server) = os.pipe()

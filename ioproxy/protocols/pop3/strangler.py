@@ -6,7 +6,7 @@ from ioproxy.protocols.pop3.requests import POP3Requests
 from ioproxy.protocols.pop3.responses import POP3Responses
 
 
-class POP3ProtocolStrangler:
+class POP3Strangler:
     def __init__(self, from_client, to_client):
         (self.from_client, self.to_client) = (from_client, to_client)
         (self.from_proxy, self.to_server) = os.pipe()

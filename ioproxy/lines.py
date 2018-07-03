@@ -1,10 +1,23 @@
 import os
 
 
+class InputSource:
+    def read_bytes(self, num_bytes):
+        pass
+
+
+class FileDescriptorInputSource(InputSource):
+    def __init__(self, input_fd):
+        self.input_fd = input_fd
+
+    def read_bytes(self, num_bytes):
+        return os.read(self.input_fd, num_bytes)
+
+
 class LinesIn:
     def __init__(self, logger, input_fd, output_fd):
         self.logger = logger
-        self.input_fd = input_fd
+        self.input_source = FileDescriptorInputSource(input_fd)
         self.output_fd = output_fd
 
         self.__bytes = b''
@@ -43,7 +56,7 @@ class LinesIn:
 
     @property
     def read_fd(self):
-        return self.input_fd
+        return self.input_source.input_fd
 
     @property
     def write_fd(self):
@@ -62,7 +75,7 @@ class LinesIn:
         return message
 
     def read(self, read_length):
-        some_bytes = os.read(self.input_fd, read_length)
+        some_bytes = self.input_source.read_bytes(read_length)
         if some_bytes:
             self.__accumulate_bytes(some_bytes)
             return True

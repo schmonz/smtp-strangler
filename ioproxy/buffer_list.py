@@ -10,10 +10,13 @@ class AbstractBufferList:
             each_buffer.close()
 
     def get_all(self):
-        return self.buffer_list
+        return self.buffer_list 
+
+    def get_readables(self):
+        pass
 
 
-class BufferList(AbstractBufferList):
+class FileDescriptorBufferList(AbstractBufferList):
     def __init__(self, buffer_list):
         AbstractBufferList.__init__(self, buffer_list)
         self.__fd_list = []

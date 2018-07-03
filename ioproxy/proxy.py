@@ -1,12 +1,12 @@
 import os
 import sys
 
-from ioproxy.bufferlist import BufferList
+from ioproxy.buffer_list import FileDescriptorBufferList
 
 
 class Proxy:
     def __init__(self, buffers):
-        self.__buffers = BufferList(buffers)
+        self.__buffers = FileDescriptorBufferList(buffers)
 
     @staticmethod
     def __await_child_exitcode(child):

@@ -9,28 +9,36 @@ import unittest
 
 class TestStrangler(unittest.TestCase):
 
-    def test_whole_request(self):
-        requests = SMTPRequests(Logger(-1), -2, -3)
-        self.assertEqual(1, 1)
+    @unittest.skip('not yet implemented: BRXT')
+    def test_BRXT_is_same_as_QUIT(self):
+        # XXX request becomes QUIT
+        self.fail('not yet implemented: BRXT')
 
-    def test_last_line_of_data(self):
-        parser = SMTPRequestParser(b'.\r\n')
-        (verb, arg) = parser.get_verb_and_arg()
-        self.assertEqual(b'.', verb)
-        self.assertEqual(b'', arg)
+    @unittest.skip('not yet implemented: CONF')
+    def test_CONF_gives_success_code_and_url(self):
+        # XXX request becomes NOOP
+        # XXX response becomes '250 https://www.spaconference.org/spa2018/'
+        self.fail('not yet implemented: CONF')
 
-    def test_munge_last_line_of_data(self):
-        requests = SMTPRequests(Logger(-1), -2, -3)
-        requests.safe_to_munge = False
-        last_line_of_data = b'.\r\n'
-        munged = requests.munge_message(last_line_of_data)
-        self.assertEqual(last_line_of_data, munged)
+    @unittest.skip('not yet implemented: GDPR capability')
+    def test_EHLO_includes_gdpr_notice(self):
+        # XXX server response does not include '250 GDPR 20160414'
+        # XXX proxy response does
+        self.fail('not yet implemented: GDPR capability')
 
-    def test_verb_no_arg(self):
-        parser = SMTPRequestParser(b'BRXT\r\n')
-        (verb, arg) = parser.get_verb_and_arg()
-        self.assertEqual(b'BRXT', verb)
+    @unittest.skip('not yet implemented: rejecting mail from Tim')
+    def test_reject_mail_from_tim(self):
+        # XXX when MAIL FROM: tim,
+        # XXX request becomes NOOP
+        # XXX response becomes '553 no thank you'
+        self.fail('not yet implemented: rejecting mail from Tim')
 
 
 if __name__ == '__main__':
     unittest.main()
+
+# More ideas:
+#
+# - Log `MAIL FROM` and `RCPT TO` parameters, with a timestamp
+# - Also log whether the server accepted or rejected
+# - Log to SQLite instead of stderr

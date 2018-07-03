@@ -5,8 +5,8 @@ from ioproxy.buffer_list import FileDescriptorBufferList
 
 
 class Proxy:
-    def __init__(self, buffers):
-        self.__buffers = FileDescriptorBufferList(buffers)
+    def __init__(self, buffer_list):
+        self.__buffers = buffer_list
 
     @staticmethod
     def __await_child_exitcode(child):

@@ -30,3 +30,11 @@ class FileDescriptorBufferList(AbstractBufferList):
             if each_buffer.read_fd in reads:
                 readables.append(each_buffer)
         return readables
+
+
+class StringBufferList(AbstractBufferList):
+    def __init__(self, buffer_list):
+        AbstractBufferList.__init__(self, buffer_list)
+
+    def get_readables(self):
+        return self.buffer_list

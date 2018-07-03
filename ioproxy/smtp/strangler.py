@@ -1,4 +1,5 @@
 from ioproxy.abstract_strangler import AbstractStrangler
+from ioproxy.buffer_list import FileDescriptorBufferList
 from ioproxy.smtp.requests import SMTPRequests
 from ioproxy.smtp.responses import SMTPResponses
 from ioproxy.proxy import Proxy
@@ -11,4 +12,4 @@ class SMTPStrangler(AbstractStrangler):
         responses = SMTPResponses(logger, self.from_server_input_source, self.to_client_output_source)
         requests.report_messages(responses.receive_message)
         responses.report_messages(requests.receive_message)
-        self.proxy = Proxy([requests, responses])
+        self.proxy = Proxy(FileDescriptorBufferList([requests, responses]))

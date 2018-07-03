@@ -5,8 +5,8 @@ from ioproxy.smtp.request_parser import SMTPRequestParser
 
 
 class SMTPRequests(LinesIn):
-    def __init__(self, logger, read_from_fd, write_to_fd):
-        LinesIn.__init__(self, logger, read_from_fd, write_to_fd)
+    def __init__(self, logger, input_fd, output_fd):
+        LinesIn.__init__(self, logger, input_fd, output_fd)
         self.want_data = False
         self.safe_to_munge = True
 

@@ -2,10 +2,10 @@ import os
 
 
 class LinesIn:
-    def __init__(self, logger, read_from_fd, write_to_fd):
+    def __init__(self, logger, input_fd, output_fd):
         self.logger = logger
-        self.__read_from_fd = read_from_fd
-        self.__write_to_fd = write_to_fd
+        self.input_fd = input_fd
+        self.output_fd = output_fd
 
         self.__bytes = b''
         self.__message = b''
@@ -43,11 +43,11 @@ class LinesIn:
 
     @property
     def read_fd(self):
-        return self.__read_from_fd
+        return self.input_fd
 
     @property
     def write_fd(self):
-        return self.__write_to_fd
+        return self.output_fd
 
     def has_whole_message(self):
         return len(self.__messages) > 0
@@ -62,7 +62,7 @@ class LinesIn:
         return message
 
     def read(self, read_length):
-        some_bytes = os.read(self.__read_from_fd, read_length)
+        some_bytes = os.read(self.input_fd, read_length)
         if some_bytes:
             self.__accumulate_bytes(some_bytes)
             return True
@@ -80,4 +80,4 @@ class LinesIn:
         munged_message = self.munge_message(message)
         self.logger.log(b'strangler-' + self.get_log_prefix() +
                         b' ' + munged_message + b'\r\n')
-        os.write(self.__write_to_fd, munged_message)
+        os.write(self.output_fd, munged_message)

@@ -1,6 +1,6 @@
 import os
 
-from ioproxy.input_source import FileDescriptorInputSource
+from ioproxy.input import FileDescriptorInput
 from ioproxy.proxied import Proxied
 
 
@@ -10,7 +10,7 @@ class AbstractStrangler:
         (self.from_client_input_source, self.to_client) = (from_client_input_source, to_client)
         (self.from_proxy, self.to_server) = os.pipe()
         (from_server, self.to_proxy) = os.pipe()
-        self.from_server_input_source = FileDescriptorInputSource(from_server)
+        self.from_server_input_source = FileDescriptorInput(from_server)
         self.child_process_id = os.fork()
         if self.child_process_id:
             os.close(self.from_proxy)

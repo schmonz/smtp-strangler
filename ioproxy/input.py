@@ -1,12 +1,12 @@
 import os
 
 
-class InputSource:
+class Input:
     def read_bytes(self, num_bytes):
         pass
 
 
-class FileDescriptorInputSource(InputSource):
+class FileDescriptorInput(Input):
     def __init__(self, input_fd):
         self.input_fd = input_fd
 
@@ -14,7 +14,7 @@ class FileDescriptorInputSource(InputSource):
         return os.read(self.input_fd, num_bytes)
 
 
-class StringInputSource(InputSource):
+class StringInput(Input):
     def __init__(self, input_string):
         self.input_string = input_string
 

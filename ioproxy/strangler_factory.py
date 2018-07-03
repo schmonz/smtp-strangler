@@ -1,4 +1,4 @@
-from ioproxy.input_source import FileDescriptorInputSource
+from ioproxy.input import FileDescriptorInput
 from ioproxy.pop3.strangler import POP3Strangler
 from ioproxy.smtp.strangler import SMTPStrangler
 
@@ -6,7 +6,7 @@ from ioproxy.smtp.strangler import SMTPStrangler
 class StranglerFactory:
     def __init__(self, logger, input_fd, output_fd):
         self.logger = logger
-        self.input_source = FileDescriptorInputSource(input_fd)
+        self.input_source = FileDescriptorInput(input_fd)
         self.output_fd = output_fd
 
     def create(self, protocol):

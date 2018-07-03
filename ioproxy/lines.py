@@ -2,10 +2,10 @@ import os
 
 
 class LinesIn:
-    def __init__(self, logger, input_source, output_fd):
+    def __init__(self, logger, input_source, output_source):
         self.logger = logger
         self.input_source = input_source
-        self.output_fd = output_fd
+        self.output_source = output_source
 
         self.__bytes = b''
         self.__message = b''
@@ -35,7 +35,7 @@ class LinesIn:
         return (first_line, leftovers)
 
     def close(self):
-        os.close(self.write_fd)
+        os.close(self.output_source.output_fd)
 
     @staticmethod
     def get_log_prefix():
@@ -47,7 +47,7 @@ class LinesIn:
 
     @property
     def write_fd(self):
-        return self.output_fd
+        return self.output_source.output_fd
 
     def has_whole_message(self):
         return len(self.__messages) > 0
@@ -80,4 +80,4 @@ class LinesIn:
         munged_message = self.munge_message(message)
         self.logger.log(b'strangler-' + self.get_log_prefix() +
                         b' ' + munged_message + b'\r\n')
-        os.write(self.output_fd, munged_message)
+        self.output_source.write_bytes(munged_message)

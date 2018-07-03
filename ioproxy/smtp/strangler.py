@@ -1,5 +1,6 @@
 from ioproxy.abstract_strangler import AbstractStrangler
 from ioproxy.buffer_list import FileDescriptorBufferList, StringBufferList
+from ioproxy.output import StringOutput
 from ioproxy.smtp.requests import SMTPRequests
 from ioproxy.smtp.responses import SMTPResponses
 from ioproxy.proxy import Proxy
@@ -23,4 +24,5 @@ class SMTPFileDescriptorStrangler(AbstractSMTPStrangler):
 class SMTPStringStrangler(AbstractSMTPStrangler):
     def __init__(self, logger, from_client_input_source, to_client_output_source):
         AbstractSMTPStrangler.__init__(self, logger, from_client_input_source, to_client_output_source)
+        self.to_server_output_source = StringOutput()
         self.proxy = Proxy(StringBufferList([self.requests, self.responses]))

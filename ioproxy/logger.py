@@ -7,3 +7,11 @@ class Logger:
 
     def log(self, message):
         os.write(self.__fd, message)
+
+
+class NullLogger(Logger):
+    def __init__(self):
+        Logger.__init__(self, -1)
+
+    def log(self, message):
+        pass

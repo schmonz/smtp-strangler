@@ -37,4 +37,5 @@ class StringBufferList(AbstractBufferList):
         AbstractBufferList.__init__(self, buffer_list)
 
     def get_readables(self):
+        # XXX if len(buffer) > 0 it's readable
         return self.buffer_list

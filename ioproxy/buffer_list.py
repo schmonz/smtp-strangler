@@ -10,7 +10,7 @@ class AbstractBufferList:
             each_buffer.close()
 
     def get_all(self):
-        return self.buffer_list 
+        return self.buffer_list
 
     def get_readables(self):
         pass

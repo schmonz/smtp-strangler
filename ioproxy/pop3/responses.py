@@ -1,11 +1,12 @@
 import os
 
+from ioproxy.input_source import FileDescriptorInputSource
 from ioproxy.lines import LinesIn
 
 
 class POP3Responses(LinesIn):
     def __init__(self, logger, input_fd, output_fd):
-        LinesIn.__init__(self, logger, input_fd, output_fd)
+        LinesIn.__init__(self, logger, FileDescriptorInputSource(input_fd), output_fd)
         self.expect_multiline_response = False
         self.report_message_callback = None
 

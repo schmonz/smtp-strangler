@@ -1,23 +1,10 @@
 import os
 
 
-class InputSource:
-    def read_bytes(self, num_bytes):
-        pass
-
-
-class FileDescriptorInputSource(InputSource):
-    def __init__(self, input_fd):
-        self.input_fd = input_fd
-
-    def read_bytes(self, num_bytes):
-        return os.read(self.input_fd, num_bytes)
-
-
 class LinesIn:
-    def __init__(self, logger, input_fd, output_fd):
+    def __init__(self, logger, input_source, output_fd):
         self.logger = logger
-        self.input_source = FileDescriptorInputSource(input_fd)
+        self.input_source = input_source
         self.output_fd = output_fd
 
         self.__bytes = b''

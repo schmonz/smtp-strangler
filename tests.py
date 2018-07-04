@@ -7,24 +7,38 @@ from ioproxy.logger import NullLogger
 from ioproxy.output import StringOutput
 from ioproxy.smtp.strangler import SMTPStringStrangler
 
+GENEROUS_READ_LENGTH = 5000
+
 
 class TestStrangler(unittest.TestCase):
     @unittest.skip('soon')
     def test_BRXT_is_same_as_QUIT(self):
-        input = StringInput(b'BRXT plz\r\n')
-        output = StringOutput()
-        strangler = SMTPStringStrangler(NullLogger(), input, output, None, None)
+        request = StringInput(b'BRXT plz\r\n')
+        request_instead = StringOutput()
+        strangler = SMTPStringStrangler(NullLogger(), request, request_instead, None, None)
 
-        strangler.requests.read(77)
+        strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
 
-        self.assertEqual(b'QUIT plz\r\n', output.output_string)
+        self.assertEqual(b'QUIT plz\r\n', request_instead.output_string)
 
     @unittest.skip('soon')
     def test_CONF_gives_success_code_and_url(self):
-        # XXX request becomes NOOP
-        # XXX response becomes '250 https://www.spaconference.org/spa2018/'
-        self.fail('not yet implemented: CONF')
+        request = StringInput(b'CONF\r\n')
+        request_instead = StringOutput()
+        response = StringInput(b'777 incredibly fake server response\r\n')
+        response_instead = StringOutput()
+        strangler = SMTPStringStrangler(NullLogger(), request, request_instead, response, response_instead)
+
+        strangler.requests.read(GENEROUS_READ_LENGTH)
+        strangler.requests.send()
+
+        self.assertEqual(b'NOOP CONF \r\n', request_instead.output_string)
+
+        strangler.responses.read(GENEROUS_READ_LENGTH)
+        strangler.responses.send()
+
+        self.assertEqual(b'250 https://www.spaconference.org/spa2018/\r\n', response_instead.output_string)
 
     @unittest.skip('soon')
     def test_EHLO_includes_gdpr_notice(self):

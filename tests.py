@@ -11,17 +11,13 @@ from ioproxy.smtp.strangler import SMTPStringStrangler
 class TestStrangler(unittest.TestCase):
     def test_BRXT_is_same_as_QUIT(self):
         input = StringInput(b'BRXT plz\r\n')
-        strangler = SMTPStringStrangler(NullLogger(), input, StringOutput(), None, None)
+        output = StringOutput()
+        strangler = SMTPStringStrangler(NullLogger(), input, output, None, None)
 
-        request = input.read_bytes(77)
-        modified_request = strangler.requests.munge_message(request)
+        strangler.requests.read(77)
+        strangler.requests.send()
 
-        # XXX better would be:
-        # strangler.requests.read(77)
-        # strangler.requests.send()
-        # modified_request = output.output_string
-
-        self.assertEqual(b'QUIT plz\r\n', modified_request)
+        self.assertEqual(b'QUIT plz\r\n', output.output_string)
 
     # def test_CONF_gives_success_code_and_url(self):
     #     # XXX request becomes NOOP

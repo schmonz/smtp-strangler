@@ -42,9 +42,18 @@ class TestStrangler(unittest.TestCase):
 
     @unittest.skip('soon')
     def test_EHLO_includes_gdpr_notice(self):
-        # XXX server response does not include '250 GDPR 20160414'
-        # XXX proxy response does
-        self.fail('not yet implemented: GDPR capability')
+        request = StringInput(b'EHLO\r\n')
+        response = StringInput(b'250-very.plausible.server\r\n250-PIPELINING\r\n250 8BITMIME\r\n')
+        response_instead = StringOutput()
+        strangler = SMTPStringStrangler(NullLogger(), request, StringOutput(), response, response_instead)
+
+        strangler.requests.read(GENEROUS_READ_LENGTH)
+        strangler.requests.send()
+        strangler.responses.read(GENEROUS_READ_LENGTH)
+        strangler.responses.send()
+
+        expected_response_instead = b'250-very.plausible.server\r\n250-PIPELINING\r\n250-8BITMIME\r\n250 GDPR 20160414\r\n'
+        self.assertEqual(expected_response_instead, response_instead.output_string)
 
     @unittest.skip('soon')
     def test_reject_mail_from_tim(self):

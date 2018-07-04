@@ -12,7 +12,7 @@ GENEROUS_READ_LENGTH = 5000
 
 class TestStrangler(unittest.TestCase):
     @unittest.skip('soon')
-    def test_BRXT_is_same_as_QUIT(self):
+    def test_brxt_means_quit(self):
         request = StringInput(b'BRXT plz\r\n')
         request_instead = StringOutput()
         strangler = SMTPStringStrangler(NullLogger(), request, request_instead, None, None)
@@ -23,7 +23,7 @@ class TestStrangler(unittest.TestCase):
         self.assertEqual(b'QUIT plz\r\n', request_instead.output_string)
 
     @unittest.skip('soon')
-    def test_CONF_gives_success_code_and_url(self):
+    def test_conf_gives_conference_url(self):
         request = StringInput(b'CONF\r\n')
         request_instead = StringOutput()
         response = StringInput(b'777 incredibly fake server response\r\n')
@@ -41,9 +41,9 @@ class TestStrangler(unittest.TestCase):
         self.assertEqual(b'250 https://www.spaconference.org/spa2018/\r\n', response_instead.output_string)
 
     @unittest.skip('soon')
-    def test_EHLO_includes_gdpr_notice(self):
+    def test_ehlo_response_includes_gdpr_capability(self):
         request = StringInput(b'EHLO\r\n')
-        response = StringInput(b'250-very.plausible.server\r\n250-PIPELINING\r\n250 8BITMIME\r\n')
+        response = StringInput(b'250-very.plausible.server\r\n250-SINGING\r\n250 DANCING\r\n')
         response_instead = StringOutput()
         strangler = SMTPStringStrangler(NullLogger(), request, StringOutput(), response, response_instead)
 
@@ -52,7 +52,7 @@ class TestStrangler(unittest.TestCase):
         strangler.responses.read(GENEROUS_READ_LENGTH)
         strangler.responses.send()
 
-        expected_response_instead = b'250-very.plausible.server\r\n250-PIPELINING\r\n250-8BITMIME\r\n250 GDPR 20160414\r\n'
+        expected_response_instead = b'250-very.plausible.server\r\n250-SINGING\r\n250-DANCING\r\n250 GDPR 20160414\r\n'
         self.assertEqual(expected_response_instead, response_instead.output_string)
 
     @unittest.skip('soon')

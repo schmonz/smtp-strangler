@@ -45,6 +45,7 @@ class TestStrangler(unittest.TestCase):
         request = StringInput(b'EHLO\r\n')
         response = StringInput(b'250-very.plausible.server\r\n250-SINGING\r\n250 DANCING\r\n')
         response_instead = StringOutput()
+        expected_response_instead = b'250-very.plausible.server\r\n250-SINGING\r\n250-DANCING\r\n250 GDPR 20160414\r\n'
         strangler = SMTPStringStrangler(NullLogger(), request, StringOutput(), response, response_instead)
 
         strangler.requests.read(GENEROUS_READ_LENGTH)
@@ -52,22 +53,34 @@ class TestStrangler(unittest.TestCase):
         strangler.responses.read(GENEROUS_READ_LENGTH)
         strangler.responses.send()
 
-        expected_response_instead = b'250-very.plausible.server\r\n250-SINGING\r\n250-DANCING\r\n250 GDPR 20160414\r\n'
         self.assertEqual(expected_response_instead, response_instead.output_string)
 
     @unittest.skip('soon')
     def test_reject_mail_from_tim(self):
-        # XXX when MAIL FROM: tim,
-        # XXX request becomes NOOP
-        # XXX response becomes '553 no thank you'
-        self.fail('not yet implemented: rejecting mail from Tim')
+        request = StringInput(b'MAIL FROM: tim\r\n')
+        request_instead = StringOutput()
+        response = StringInput(b'250 ok\r\n')
+        response_instead = StringOutput()
+        strangler = SMTPStringStrangler(NullLogger(), request, request_instead, response, response_instead)
 
-    # More ideas:
-    #
-    # - Log `MAIL FROM` and `RCPT TO` parameters, with a timestamp
-    # - Also log whether the server accepted or rejected
-    # - Log to SQLite instead of stderr
+        strangler.requests.read(GENEROUS_READ_LENGTH)
+        strangler.requests.send()
+
+        expected_request_instead = b'NOOP MAIL FROM: tim\r\n'
+        self.assertEqual(expected_request_instead, request_instead.output_string)
+
+        strangler.responses.read(GENEROUS_READ_LENGTH)
+        strangler.responses.send()
+
+        expected_response_instead = b'553 sorry, your envelope sender is in my badmailfrom list (#5.7.1)\r\n'
+        self.assertEqual(expected_response_instead, response_instead.output_string)
 
 
 if __name__ == '__main__':
     unittest.main()
+
+# More ideas:
+#
+# - Log `MAIL FROM` and `RCPT TO` parameters, with a timestamp
+# - Also log whether the server accepted or rejected
+# - Log to SQLite instead of stderr

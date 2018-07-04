@@ -16,6 +16,14 @@ class SMTPRequests(LinesIn):
         return (verb, arg)
 
     @staticmethod
+    def __munge_mail(verb, arg):
+        (unused, recipient) = arg.split(b': ', 1)
+        if (b'tim' == recipient):
+            return (b'NOOP', verb + b' ' + arg)
+        else:
+            return (verb, arg)
+
+    @staticmethod
     def __munge_noop(verb, arg):
         arg = verb + b' ' + arg
         verb = b'NOOP'
@@ -48,6 +56,7 @@ class SMTPRequests(LinesIn):
         munge_functions = {
             b'BRXT': self.__munge_brxt,
             b'CONF': self.__munge_noop,
+            b'MAIL': self.__munge_mail,
             b'WORD': self.__munge_noop,
         }
         try:

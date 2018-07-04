@@ -11,19 +11,6 @@ class SMTPRequests(LinesIn):
         self.safe_to_munge = True
 
     @staticmethod
-    def __munge_brxt(verb, arg):
-        verb = b'QUIT'
-        return (verb, arg)
-
-    @staticmethod
-    def __munge_mail(verb, arg):
-        (unused, recipient) = arg.split(b': ', 1)
-        if (b'tim' == recipient):
-            return (b'NOOP', verb + b' ' + arg)
-        else:
-            return (verb, arg)
-
-    @staticmethod
     def __munge_noop(verb, arg):
         arg = verb + b' ' + arg
         verb = b'NOOP'
@@ -54,9 +41,6 @@ class SMTPRequests(LinesIn):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
 
         munge_functions = {
-            b'BRXT': self.__munge_brxt,
-            b'CONF': self.__munge_noop,
-            b'MAIL': self.__munge_mail,
             b'WORD': self.__munge_noop,
         }
         try:

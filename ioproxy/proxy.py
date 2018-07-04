@@ -13,7 +13,7 @@ class Proxy:
         (pid, exitcode, resources) = os.wait4(child, 0)
         return exitcode
 
-    def proxy_and_exit(self, child, read_length):
+    def proxy(self, read_length):
         someone_closed = False
 
         while not someone_closed:
@@ -25,4 +25,6 @@ class Proxy:
                     someone_closed = True
 
         self.__buffers.close()
+
+    def exit(self, child):
         sys.exit(self.__await_child_exitcode(child))

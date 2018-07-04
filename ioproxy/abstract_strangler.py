@@ -5,7 +5,7 @@ from ioproxy.output import FileDescriptorOutput
 from ioproxy.proxied import Proxied
 
 
-class AbstractStrangler:
+class AbstractFileDescriptorStrangler:
     def __init__(self, logger, from_client_input_source, to_client_output_source):
         self.logger = logger
         (self.from_client_input_source, self.to_client_output_source) = (from_client_input_source, to_client_output_source)
@@ -24,9 +24,21 @@ class AbstractStrangler:
 
     def strangle(self, read_size, command_line_arguments):
         if self.child_process_id:
-            self.proxy.proxy_and_exit(self.child_process_id, read_size)
+            self.proxy.proxy(read_size)
+            self.proxy.exit(self.child_process_id)
         else:
             Proxied(
                 self.from_client_input_source.input_fd, self.to_proxy,
                 self.from_proxy, self.to_client_output_source.output_fd,
             ).exec_and_exit(self.logger, command_line_arguments)
+
+
+class AbstractStringStrangler:
+    def __init__(self, logger, from_client_input_source, to_server_output_source, from_server_input_source, to_client_output_source):
+        self.logger = logger
+        (self.from_client_input_source, self.to_client_output_source) = (from_client_input_source, to_client_output_source)
+        (self.from_server_input_source, self.to_server_output_source) = (from_server_input_source, to_server_output_source)
+        self.proxy = None
+
+    def strangle(self, read_size, command_line_arguments):
+        self.proxy.proxy(read_size)

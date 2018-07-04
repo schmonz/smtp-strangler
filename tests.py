@@ -11,7 +11,7 @@ from ioproxy.smtp.strangler import SMTPStringStrangler
 class TestStrangler(unittest.TestCase):
     def test_BRXT_is_same_as_QUIT(self):
         input = StringInput(b'BRXT plz\r\n')
-        strangler = SMTPStringStrangler(NullLogger(), input, StringOutput())
+        strangler = SMTPStringStrangler(NullLogger(), input, StringOutput(), None, None)
 
         request = input.read_bytes(77)
         modified_request = strangler.requests.munge_message(request)

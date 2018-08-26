@@ -7,7 +7,6 @@ from ioproxy.proxy import Proxy
 
 from ioproxy.input import FileDescriptorInput
 from ioproxy.output import FileDescriptorOutput
-from ioproxy.proxied import Proxied
 
 
 class SMTPFileDescriptorStrangler:
@@ -37,10 +36,14 @@ class SMTPFileDescriptorStrangler:
             self.proxy.proxy(read_size)
             self.proxy.exit(self.child_process_id)
         else:
-            Proxied(
-                self.from_client_input_source.input_fd, self.to_proxy,
-                self.from_proxy, self.to_client_output_source.output_fd,
-            ).exec_and_exit(self.logger, command_line_arguments)
+            os.dup2(self.from_proxy, self.from_client_input_source.input_fd)
+            os.dup2(self.to_proxy, self.to_client_output_source.output_fd)
+
+            program_to_strangle = command_line_arguments[0]
+            try:
+                os.execvp(program_to_strangle, command_line_arguments)
+            except OSError as o:
+                self.logger.log(program_to_strangle + ': ' + o.strerror + '\r\n')
 
 
 class SMTPStringStrangler:

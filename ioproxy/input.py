@@ -1,6 +1,6 @@
 import os
 
-
+# this is crazy, use StringIO, it's right there
 class Input:
     def read_bytes(self, num_bytes):
         pass
@@ -22,3 +22,7 @@ class StringInput(Input):
         some_bytes = self.input_string[:num_bytes]
         self.input_string = self.input_string[num_bytes:]
         return some_bytes
+
+# represent ofmipd with class, so I can wrap my interactions with it
+# maybe "proxy" isn't an object. I'm just interacting with SMTPServer and SMTPClient
+#

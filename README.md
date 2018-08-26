@@ -2,7 +2,7 @@
 
 This is an implementation of the
 [Strangler pattern](https://martinfowler.com/bliki/StranglerApplication.html)
-for any SMTP or POP3 server program that can run under
+for any SMTP server program that can run under
 [inetd(8)](https://wiki.netbsd.org/guide/inetd/)
 or
 [tcpserver(1)](https://cr.yp.to/ucspi-tcp/tcpserver.html).

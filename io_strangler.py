@@ -4,12 +4,14 @@ import os
 import sys
 
 from ioproxy.logger import Logger
-from ioproxy.strangler_factory import StranglerFactory
+from ioproxy.input import FileDescriptorInput
+from ioproxy.output import FileDescriptorOutput
+from ioproxy.smtp.strangler import SMTPFileDescriptorStrangler
 
 
 def die_usage(logger):
     this_program = os.path.basename(sys.argv[0]).encode('ASCII')
-    logger.log(b'usage: ' + this_program + b' <pop3|smtp>' +
+    logger.log(b'usage: ' + this_program +
                b' program-to-strangle [ arg ... ]\r\n')
     sys.exit(99)
 
@@ -24,16 +26,13 @@ def main(command_line_arguments):
 
     if not command_line_arguments:
         die_usage(logger)
-    protocol = command_line_arguments.pop(0)
-    if not command_line_arguments:
-        die_usage(logger)
 
     try:
-        StranglerFactory(
+        SMTPFileDescriptorStrangler(
             logger,
-            sys.stdin.fileno(),
-            sys.stdout.fileno(),
-        ).create(protocol).strangle(77, command_line_arguments)
+            FileDescriptorInput(sys.stdin.fileno()),
+            FileDescriptorOutput(sys.stdout.fileno()),
+        ).strangle(77, command_line_arguments)
     except KeyError:
         die_usage(logger)
     except KeyboardInterrupt:

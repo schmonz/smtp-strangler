@@ -16,6 +16,7 @@ class SMTPFileDescriptorStrangler(AbstractFileDescriptorStrangler):
 
 
 class SMTPStringStrangler(AbstractStringStrangler):
+    # Why is AbstractStringStrangler here???
     def __init__(self, logger, from_client_input_source, to_server_output_source, from_server_input_source, to_client_output_source):
         AbstractStringStrangler.__init__(self, logger, from_client_input_source, to_server_output_source, from_server_input_source, to_client_output_source)
         self.requests = SMTPRequests(logger, from_client_input_source, self.to_server_output_source)
@@ -23,3 +24,11 @@ class SMTPStringStrangler(AbstractStringStrangler):
         self.requests.report_messages(self.responses.receive_message)
         self.responses.report_messages(self.requests.receive_message)
         self.proxy = Proxy(StringBufferList([self.requests, self.responses]))
+
+    def send(self):
+        self.requests.read(5000)
+        self.requests.send()
+
+    def receive(self):
+        self.responses.read(5000)
+        self.responses.send()

@@ -12,46 +12,39 @@ GENEROUS_READ_LENGTH = 5000
 
 class TestStrangler(unittest.TestCase):
     def test_brxt_means_quit(self):
-        request = StringInput(b'BRXT plz\r\n')
-        request_instead = StringOutput()
-        strangler = SMTPStringStrangler(NoLogging(), request, request_instead, None, None)
+        brexit_request = StringInput(b'BRXT plz\r\n')
+        quit_request = StringOutput()
 
-        strangler.requests.read(GENEROUS_READ_LENGTH)
-        strangler.requests.send()
+        strangler = SMTPStringStrangler(NoLogging(), brexit_request, quit_request, None, None)
+        strangler.send()
 
-        self.assertEqual(b'QUIT plz\r\n', request_instead.output_string)
+        expected_request_string = quit_request.output_string
+        self.assertEqual(b'QUIT plz\r\n', expected_request_string)
 
-    @unittest.skip('soon')
     def test_conf_gives_conference_url(self):
         request = StringInput(b'CONF\r\n')
         request_instead = StringOutput()
         response = StringInput(b'777 incredibly fake server response\r\n')
         response_instead = StringOutput()
-        strangler = SMTPStringStrangler(NoLogging(), request, request_instead, response, response_instead)
 
-        strangler.requests.read(GENEROUS_READ_LENGTH)
-        strangler.requests.send()
+        strangler = SMTPStringStrangler(NoLogging(), request, request_instead, response, response_instead)
+        strangler.send()
+        strangler.receive()
 
         self.assertEqual(b'NOOP CONF \r\n', request_instead.output_string)
-
-        strangler.responses.read(GENEROUS_READ_LENGTH)
-        strangler.responses.send()
-
         self.assertEqual(b'250 https://www.spaconference.org/spa2018/\r\n', response_instead.output_string)
 
     @unittest.skip('soon')
     def test_ehlo_response_includes_gdpr_capability(self):
         request = StringInput(b'EHLO\r\n')
-        response = StringInput(b'250-very.plausible.server\r\n250-SINGING\r\n250 DANCING\r\n')
+        response = StringInput(b'250-very.plausible.server\r\n')
         response_instead = StringOutput()
-        expected_response_instead = b'250-very.plausible.server\r\n250-SINGING\r\n250-DANCING\r\n250 GDPR 20160414\r\n'
+
         strangler = SMTPStringStrangler(NoLogging(), request, StringOutput(), response, response_instead)
+        strangler.send()
+        strangler.receive()
 
-        strangler.requests.read(GENEROUS_READ_LENGTH)
-        strangler.requests.send()
-        strangler.responses.read(GENEROUS_READ_LENGTH)
-        strangler.responses.send()
-
+        expected_response_instead = b'250-very.plausible.server\r\n250 GDPR 20160414\r\n'
         self.assertEqual(expected_response_instead, response_instead.output_string)
 
     @unittest.skip('soon')
@@ -62,14 +55,12 @@ class TestStrangler(unittest.TestCase):
         response_instead = StringOutput()
         strangler = SMTPStringStrangler(NoLogging(), request, request_instead, response, response_instead)
 
-        strangler.requests.read(GENEROUS_READ_LENGTH)
-        strangler.requests.send()
+        strangler.send()
 
         expected_request_instead = b'NOOP MAIL FROM: tim\r\n'
         self.assertEqual(expected_request_instead, request_instead.output_string)
 
-        strangler.responses.read(GENEROUS_READ_LENGTH)
-        strangler.responses.send()
+        strangler.receive()
 
         expected_response_instead = b'553 sorry, your envelope sender is in my badmailfrom list (#5.7.1)\r\n'
         self.assertEqual(expected_response_instead, response_instead.output_string)

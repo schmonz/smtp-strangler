@@ -33,8 +33,6 @@ def main(command_line_arguments):
             FileDescriptorInput(sys.stdin.fileno()),
             FileDescriptorOutput(sys.stdout.fileno()),
         ).strangle(77, command_line_arguments)
-    except KeyError:
-        die_usage(logger)
     except KeyboardInterrupt:
         die_interrupt(logger)
 

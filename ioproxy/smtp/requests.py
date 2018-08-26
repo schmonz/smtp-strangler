@@ -1,5 +1,3 @@
-import os
-
 from ioproxy.lines import LinesIn
 from ioproxy.smtp.request_parser import SMTPRequestParser
 

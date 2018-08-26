@@ -3,7 +3,7 @@
 import unittest
 
 from ioproxy.input import StringInput
-from ioproxy.logger import NullLogger
+from ioproxy.logger import NoLogging
 from ioproxy.output import StringOutput
 from ioproxy.smtp.strangler import SMTPStringStrangler
 
@@ -11,11 +11,10 @@ GENEROUS_READ_LENGTH = 5000
 
 
 class TestStrangler(unittest.TestCase):
-    @unittest.skip('soon')
     def test_brxt_means_quit(self):
         request = StringInput(b'BRXT plz\r\n')
         request_instead = StringOutput()
-        strangler = SMTPStringStrangler(NullLogger(), request, request_instead, None, None)
+        strangler = SMTPStringStrangler(NoLogging(), request, request_instead, None, None)
 
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
@@ -28,7 +27,7 @@ class TestStrangler(unittest.TestCase):
         request_instead = StringOutput()
         response = StringInput(b'777 incredibly fake server response\r\n')
         response_instead = StringOutput()
-        strangler = SMTPStringStrangler(NullLogger(), request, request_instead, response, response_instead)
+        strangler = SMTPStringStrangler(NoLogging(), request, request_instead, response, response_instead)
 
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
@@ -46,7 +45,7 @@ class TestStrangler(unittest.TestCase):
         response = StringInput(b'250-very.plausible.server\r\n250-SINGING\r\n250 DANCING\r\n')
         response_instead = StringOutput()
         expected_response_instead = b'250-very.plausible.server\r\n250-SINGING\r\n250-DANCING\r\n250 GDPR 20160414\r\n'
-        strangler = SMTPStringStrangler(NullLogger(), request, StringOutput(), response, response_instead)
+        strangler = SMTPStringStrangler(NoLogging(), request, StringOutput(), response, response_instead)
 
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
@@ -61,7 +60,7 @@ class TestStrangler(unittest.TestCase):
         request_instead = StringOutput()
         response = StringInput(b'250 ok\r\n')
         response_instead = StringOutput()
-        strangler = SMTPStringStrangler(NullLogger(), request, request_instead, response, response_instead)
+        strangler = SMTPStringStrangler(NoLogging(), request, request_instead, response, response_instead)
 
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()

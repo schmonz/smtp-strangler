@@ -9,7 +9,7 @@ class Logger:
         os.write(self.__fd, message)
 
 
-class NullLogger(Logger):
+class NoLogging(Logger):
     def __init__(self):
         Logger.__init__(self, -1)
 

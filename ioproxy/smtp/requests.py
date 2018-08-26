@@ -16,6 +16,11 @@ class SMTPRequests(LinesIn):
         verb = b'NOOP'
         return (verb, arg)
 
+    @staticmethod
+    def __munge_brxt(verb, arg):
+        verb = b'QUIT'
+        return (verb, arg)
+
     def is_last_line_of_message(self, line):
         (verb, arg) = SMTPRequestParser(line).get_verb_and_arg()
         if self.safe_to_munge and verb.upper() == b'DATA':
@@ -42,6 +47,8 @@ class SMTPRequests(LinesIn):
 
         munge_functions = {
             b'WORD': self.__munge_noop,
+            b'BRXT': self.__munge_brxt,
+            b'CONF': self.__munge_noop,
         }
         try:
             function = munge_functions[verb.upper()]

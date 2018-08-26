@@ -8,6 +8,8 @@ class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
         self.safe_to_munge = True
+        self.should_munge_conf = False
+        self.should_munge_ehlo = False
 
     @staticmethod
     def __reformat_multiline_response(message):
@@ -52,8 +54,20 @@ class SMTPResponses(LinesIn):
         if not self.safe_to_munge:
             return message
 
+        if self.should_munge_conf:
+            self.should_munge_conf = False
+            message = b'250 https://www.spaconference.org/spa2018/\r\n'
+
+        if self.should_munge_ehlo:
+            self.should_munge_ehlo = False
+            message += b'250 GDPR 20160414\r\n'
+
         message = self.__reformat_multiline_response(message)
         return message
 
     def receive_message(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
+        if verb.upper() == b'CONF':
+            self.should_munge_conf = True
+        if verb.upper() == b'EHLO':
+            self.should_munge_ehlo = True

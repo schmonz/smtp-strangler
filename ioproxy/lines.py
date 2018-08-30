@@ -58,7 +58,7 @@ class LinesIn:
     def log_disconnect(self):
         self.logger.log(b'[line dropped connection]\r\n')
 
-    def munge_message(self, message):
+    def modify_message(self, message):
         return message
 
     def read(self, read_length):
@@ -77,7 +77,7 @@ class LinesIn:
         message = self.__messages.pop(0)
         self.logger.log(b'          ' + self.get_log_prefix() +
                         b' ' + message)
-        munged_message = self.munge_message(message)
+        modified_message = self.modify_message(message)
         self.logger.log(b'strangler-' + self.get_log_prefix() +
-                        b' ' + munged_message + b'\r\n')
-        self.output_source.write_bytes(munged_message)
+                        b' ' + modified_message + b'\r\n')
+        self.output_source.write_bytes(modified_message)

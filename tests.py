@@ -80,9 +80,3 @@ class TestStrangler(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-# More ideas:
-#
-# - Log `MAIL FROM` and `RCPT TO` parameters, with a timestamp
-# - Also log whether the server accepted or rejected
-# - Log to SQLite instead of stderr

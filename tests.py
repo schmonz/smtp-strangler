@@ -12,19 +12,19 @@ GENEROUS_READ_LENGTH = 5000
 
 class TestStrangler(unittest.TestCase):
     @unittest.skip('soon')
-    def test_brxt_means_quit(self):
-        request = StringInput(b'BRXT plz\r\n')
+    def test_bassd_scho_means_quit(self):
+        request = StringInput(b'BASSD scho\r\n')
         request_instead = StringOutput()
         strangler = SMTPStringStrangler(DoNothingLogger(), request, request_instead, None, None)
 
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
 
-        self.assertEqual(b'QUIT plz\r\n', request_instead.output_string)
+        self.assertEqual(b'QUIT scho\r\n', request_instead.output_string)
 
     @unittest.skip('soon')
-    def test_conf_gives_conference_url(self):
-        request = StringInput(b'CONF\r\n')
+    def test_munich_gives_meetup_url(self):
+        request = StringInput(b'MUNICH\r\n')
         request_instead = StringOutput()
         response = StringInput(b'777 incredibly fake server response\r\n')
         response_instead = StringOutput()
@@ -33,12 +33,12 @@ class TestStrangler(unittest.TestCase):
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
 
-        self.assertEqual(b'NOOP CONF \r\n', request_instead.output_string)
+        self.assertEqual(b'NOOP MUNICH \r\n', request_instead.output_string)
 
         strangler.responses.read(GENEROUS_READ_LENGTH)
         strangler.responses.send()
 
-        self.assertEqual(b'250 https://www.spaconference.org/spa2018/\r\n', response_instead.output_string)
+        self.assertEqual(b'250 https://www.meetup.com/munich-software-craft-community/\r\n', response_instead.output_string)
 
     @unittest.skip('soon')
     def test_ehlo_response_includes_gdpr_capability(self):
@@ -61,8 +61,8 @@ class TestStrangler(unittest.TestCase):
         self.assertEqual(expected_response_instead, response_instead.output_string)
 
     @unittest.skip('soon')
-    def test_reject_mail_from_tim(self):
-        request = StringInput(b'MAIL FROM: tim\r\n')
+    def test_reject_mail_from_david(self):
+        request = StringInput(b'MAIL FROM: david\r\n')
         request_instead = StringOutput()
         response = StringInput(b'250 ok\r\n')
         response_instead = StringOutput()
@@ -71,7 +71,7 @@ class TestStrangler(unittest.TestCase):
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
 
-        expected_request_instead = b'NOOP MAIL FROM: tim\r\n'
+        expected_request_instead = b'NOOP MAIL FROM: david\r\n'
         self.assertEqual(expected_request_instead, request_instead.output_string)
 
         strangler.responses.read(GENEROUS_READ_LENGTH)

@@ -27,8 +27,8 @@ class SMTPFileDescriptorStrangler:
 
         self.requests = SMTPRequests(logger, from_client_input_source, self.to_server_output_source)
         self.responses = SMTPResponses(logger, self.from_server_input_source, self.to_client_output_source)
-        self.requests.report_messages(self.responses.receive_message)
-        self.responses.report_messages(self.requests.receive_message)
+        self.requests.report_messages(self.responses.set_state_for_next_response)
+        self.responses.report_messages(self.requests.set_state_for_next_request)
         self.proxy = Proxy(FileDescriptorBufferList([self.requests, self.responses]))
 
     def strangle(self, read_size, command_line_arguments):
@@ -54,8 +54,8 @@ class SMTPStringStrangler:
 
         self.requests = SMTPRequests(logger, from_client_input_source, self.to_server_output_source)
         self.responses = SMTPResponses(logger, self.from_server_input_source, self.to_client_output_source)
-        self.requests.report_messages(self.responses.receive_message)
-        self.responses.report_messages(self.requests.receive_message)
+        self.requests.report_messages(self.responses.set_state_for_next_response)
+        self.responses.report_messages(self.requests.set_state_for_next_request)
         self.proxy = Proxy(StringBufferList([self.requests, self.responses]))
 
     def strangle(self, read_size, command_line_arguments):

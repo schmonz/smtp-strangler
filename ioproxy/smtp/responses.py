@@ -65,7 +65,7 @@ class SMTPResponses(LinesIn):
         message = self.__reformat_multiline_response(message)
         return message
 
-    def receive_message(self, message):
+    def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
         if verb.upper() == b'CONF':
             self.should_munge_conf = True

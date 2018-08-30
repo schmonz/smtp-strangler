@@ -40,5 +40,5 @@ it's pretty easy to start handling certain requests in a new way.
 
 - Right-click and run `tests.py`
 - Right-click and run `io_strangler.py`
-- Run -> Edit Configurations -> Parameters should be `smtp .../place/to/put/source/trees/mess822-0.58/ofmipd`
+- Run -> Edit Configurations -> Parameters should be `.../place/to/put/source/trees/mess822-0.58/ofmipd`
 - Run `io_strangler.py` again and it should work interactively (try `HELP`, `QUIT`)

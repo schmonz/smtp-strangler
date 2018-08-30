@@ -56,7 +56,7 @@ class SMTPRequests(LinesIn):
 
         return verb + b' ' + arg + b'\r\n'
 
-    def receive_message(self, message):
+    def set_state_for_next_request(self, message):
         if self.want_data and message.lower().startswith(b'354 '):
             self.safe_to_munge = False
         else:

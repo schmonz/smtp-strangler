@@ -14,11 +14,6 @@ class SMTPRequests(LinesIn):
         verb = b'NOOP'
         return (verb, arg)
 
-    @staticmethod
-    def __modify_brxt(verb, arg):
-        verb = b'QUIT'
-        return (verb, arg)
-
     def is_last_line_of_message(self, line):
         (verb, arg) = SMTPRequestParser(line).get_verb_and_arg()
         if self.safe_to_modify and verb.upper() == b'DATA':
@@ -45,8 +40,6 @@ class SMTPRequests(LinesIn):
 
         modifier_functions = {
             b'WORD': self.__modify_noop,
-            b'BRXT': self.__modify_brxt,
-            b'CONF': self.__modify_noop,
         }
         try:
             function = modifier_functions[verb.upper()]

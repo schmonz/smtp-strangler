@@ -8,6 +8,9 @@ class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
         self.safe_to_modify = True
+        self.request_was_nyxp = False
+        self.request_was_ehlo = False
+        self.request_was_craeg = False
 
     @staticmethod
     def __reformat_multiline_response(message):
@@ -52,6 +55,12 @@ class SMTPResponses(LinesIn):
         if not self.safe_to_modify:
             return message
 
+        if self.request_was_nyxp:
+            message = b'250 https://www.meetup.com/xp-26/\r\n'
+        elif self.request_was_ehlo:
+            message += b'250 GDPR 20160414\r\n'
+        elif self.request_was_craeg:
+            message = b'553 sorry, your envelope sender is in my badmailfrom list (#5.7.1)\r\n'
 
         message = self.__reformat_multiline_response(message)
         return message
@@ -59,3 +68,11 @@ class SMTPResponses(LinesIn):
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
 
+        # XXXmedina: Strangle me...
+        if verb.upper() == b'NYXP':
+            self.request_was_nyxp = True
+        else:
+            self.request_was_nyxp = False
+
+        self.request_was_ehlo = verb.upper() == b'EHLO'
+        self.request_was_craeg = verb.upper() == b'MAIL' and arg == b'FROM: craeg'

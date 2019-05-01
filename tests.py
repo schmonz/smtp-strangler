@@ -11,7 +11,6 @@ GENEROUS_READ_LENGTH = 5000
 
 
 class TestStrangler(unittest.TestCase):
-    @unittest.skip('soon')
     def test_mpch_means_quit(self):
         request = StringInput(b'MPCH plz\r\n')
         request_instead = StringOutput()
@@ -22,7 +21,6 @@ class TestStrangler(unittest.TestCase):
 
         self.assertEqual(b'QUIT plz\r\n', request_instead.output_string)
 
-    @unittest.skip('soon')
     def test_conf_gives_conference_url(self):
         request = StringInput(b'CONF\r\n')
         request_instead = StringOutput()

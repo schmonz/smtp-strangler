@@ -8,6 +8,7 @@ class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
         self.safe_to_modify = True
+        self.conf = False
 
     @staticmethod
     def __reformat_multiline_response(message):
@@ -45,17 +46,21 @@ class SMTPResponses(LinesIn):
     def log_disconnect(self):
         self.logger.log(b'[server dropped connection]\r\n')
 
-    def modify_message(self, message):
+    def modify_message(self, response):
         if self.report_message_callback:
-            self.report_message_callback(message)
+            self.report_message_callback(response)
 
         if not self.safe_to_modify:
-            return message
+            return response
+
+        response = self.__reformat_multiline_response(response)
+        if self.conf:
+            return b"250 https://www.agilealliance.org/deliveragile-2019\r\n"
+        return response
 
 
-        message = self.__reformat_multiline_response(message)
-        return message
-
-    def set_state_for_next_response(self, message):
-        (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
+    def set_state_for_next_response(self, request):
+        (verb, arg) = SMTPRequestParser(request).get_verb_and_arg()
+        if verb == b'CONF':
+            self.conf = True
 

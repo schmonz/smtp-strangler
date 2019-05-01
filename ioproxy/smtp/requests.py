@@ -37,14 +37,14 @@ class SMTPRequests(LinesIn):
     def log_disconnect(self):
         self.logger.log(b'[client dropped connection]\r\n')
 
-    def modify_message(self, message):
+    def modify_message(self, request):
         if self.report_message_callback:
-            self.report_message_callback(message)
+            self.report_message_callback(request)
 
         if not self.safe_to_modify:
-            return message
+            return request
 
-        (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
+        (verb, arg) = SMTPRequestParser(request).get_verb_and_arg()
 
         modifier_functions = {
             b'WORD': self.__modify_noop,

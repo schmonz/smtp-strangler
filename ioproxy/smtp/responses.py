@@ -3,12 +3,15 @@ import os
 from ioproxy.lines import LinesIn
 from ioproxy.smtp.request_parser import SMTPRequestParser
 
-
 class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
         self.safe_to_modify = True
+        self.reset_flags()
+
+    def reset_flags(self):
         self.conf = False
+        self.ehlo = False
 
     @staticmethod
     def __reformat_multiline_response(message):
@@ -53,14 +56,19 @@ class SMTPResponses(LinesIn):
         if not self.safe_to_modify:
             return response
 
-        response = self.__reformat_multiline_response(response)
         if self.conf:
             return b"250 https://www.agilealliance.org/deliveragile-2019\r\n"
+
+        if self.ehlo:
+            response += b'250 GDPR 20160414\r\n'
+
+        response = self.__reformat_multiline_response(response)
         return response
 
-
     def set_state_for_next_response(self, request):
+        self.reset_flags()
         (verb, arg) = SMTPRequestParser(request).get_verb_and_arg()
-        if verb == b'CONF':
+        if verb.upper() == b'CONF':
             self.conf = True
-
+        if verb.upper() == b'EHLO':
+            self.ehlo = True

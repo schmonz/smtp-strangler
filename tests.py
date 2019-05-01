@@ -38,18 +38,20 @@ class TestStrangler(unittest.TestCase):
 
         self.assertEqual(b'250 https://www.agilealliance.org/deliveragile-2019\r\n', response_instead.output_string)
 
-    @unittest.skip('soon')
     def test_ehlo_response_includes_gdpr_capability(self):
         request = StringInput(b'EHLO\r\n')
-        response = StringInput(b'250-very.plausible.server\r\n' +
+
+        og_response = StringInput(b'250-very.plausible.server\r\n' +
                                b'250-SINGING\r\n' +
                                b'250 DANCING\r\n')
+
         response_instead = StringOutput()
+
         expected_response_instead = b'250-very.plausible.server\r\n' +\
                                     b'250-SINGING\r\n' +\
                                     b'250-DANCING\r\n'+\
                                     b'250 GDPR 20160414\r\n'
-        strangler = SMTPStringStrangler(DoNothingLogger(), request, StringOutput(), response, response_instead)
+        strangler = SMTPStringStrangler(DoNothingLogger(), request, StringOutput(), og_response, response_instead)
 
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()

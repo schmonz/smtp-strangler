@@ -8,6 +8,7 @@ class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
         self.safe_to_modify = True
+        self.verb_was_pubmob = False
 
     @staticmethod
     def __reformat_multiline_response(message):
@@ -52,10 +53,13 @@ class SMTPResponses(LinesIn):
         if not self.safe_to_modify:
             return message
 
+        if self.verb_was_pubmob:
+            message = b'250 http://pubmob.com/\r\n'
+
 
         message = self.__reformat_multiline_response(message)
         return message
 
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
-
+        self.verb_was_pubmob = (verb.upper() == b'PUBMOB')

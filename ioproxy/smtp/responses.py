@@ -8,6 +8,7 @@ class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
         self.safe_to_modify = True
+        self.__verb_was_conf = False
 
     @staticmethod
     def __reformat_multiline_response(message):
@@ -52,10 +53,12 @@ class SMTPResponses(LinesIn):
         if not self.safe_to_modify:
             return message
 
+        if self.__verb_was_conf:
+            message = b'250 https://www.bcs.org/events/2020/february/mini-spa-conference-2020-leeds/\r\n'
 
         message = self.__reformat_multiline_response(message)
         return message
 
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
-
+        self.__verb_was_conf = (verb == b'CONF')

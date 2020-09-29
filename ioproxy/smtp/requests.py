@@ -45,6 +45,7 @@ class SMTPRequests(LinesIn):
         modifier_functions = {
             b'WORD': self.__modify_noop,
             b'BYE': self.__modify_bye,
+            b'CONF': self.__modify_noop,
         }
         try:
             function = modifier_functions[verb.upper()]

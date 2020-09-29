@@ -9,9 +9,15 @@ class SMTPResponses(LinesIn):
         LinesIn.__init__(self, logger, input_source, output_fd)
         self.safe_to_modify = True
         self.verb_was_pubmob = False
+        self.verb_was_ehlo = False
 
     @staticmethod
     def __reformat_multiline_response(message):
+        """
+        Makes sure the last line in a response is hyphenated correctly
+        :param message:
+        :return:
+        """
         reformatted = b''
 
         index = 3
@@ -55,6 +61,8 @@ class SMTPResponses(LinesIn):
 
         if self.verb_was_pubmob:
             message = b'250 http://pubmob.com/\r\n'
+        if self.verb_was_ehlo:
+            message += b'250 GDPR 20160414\r\n'
 
 
         message = self.__reformat_multiline_response(message)
@@ -63,3 +71,4 @@ class SMTPResponses(LinesIn):
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
         self.verb_was_pubmob = (verb.upper() == b'PUBMOB')
+        self.verb_was_ehlo = (verb.upper() == b'EHLO')

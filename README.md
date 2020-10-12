@@ -24,11 +24,9 @@ it's pretty easy to start handling certain requests in a new way.
 ### 1. Get the old C code to be strangled
 
      $ cd .../place/to/put/source/trees
-     $ wget https://cr.yp.to/software/mess822-0.58.tar.gz
-     $ tar -zxf mess822-0.58.tar.gz && rm mess822-0.58.tar.gz
+     $ git clone https://github.com/schmonz/mess822
      $ cd mess822
-     $ sed -e '1s|$| -include /usr/include/errno.h|' < conf-cc > tmp && mv tmp conf-cc
-     $ sed -e "1s|.*|$(pwd)|" < conf-qmail > tmp && mv tmp conf-qmail
+     $ git checkout smtp-strangler
      $ make
 
 ### 2. Get the Python Strangler code

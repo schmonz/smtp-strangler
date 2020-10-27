@@ -56,9 +56,11 @@ class SMTPResponses(LinesIn):
 
         if self.request_was_pubmob: 
             message = b'250 http://pubmob.com/\r\n'
+            self.request_was_pubmob = False
 
         if self.request_was_ehlo:
             message += b'250 GDPR 20160414\r\n'
+            self.request_was_ehlo = False
 
         message = self.__reformat_multiline_response(message)
         return message
@@ -67,6 +69,5 @@ class SMTPResponses(LinesIn):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
         if verb.upper() == b'PUBMOB':
             self.request_was_pubmob = True
-
         if verb.upper() == b'EHLO' :
             self.request_was_ehlo = True

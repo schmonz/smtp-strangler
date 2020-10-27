@@ -23,8 +23,8 @@ class TestStrangler(unittest.TestCase):
         self.assertEqual(b'QUIT plz\r\n', request_instead.output_string)
 
     @unittest.skip('soon')
-    def test_conf_gives_conference_url(self):
-        request = StringInput(b'CONF\r\n')
+    def test_pubmob_gives_pubmob_url(self):
+        request = StringInput(b'PUBMOB\r\n')
         request_instead = StringOutput()
         response = StringInput(b'777 incredibly fake server response\r\n')
         response_instead = StringOutput()
@@ -33,12 +33,12 @@ class TestStrangler(unittest.TestCase):
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
 
-        self.assertEqual(b'NOOP CONF \r\n', request_instead.output_string)
+        self.assertEqual(b'NOOP PUBMOB \r\n', request_instead.output_string)
 
         strangler.responses.read(GENEROUS_READ_LENGTH)
         strangler.responses.send()
 
-        self.assertEqual(b'250 https://www.bcs.org/events/2020/february/mini-spa-conference-2020-leeds/\r\n', response_instead.output_string)
+        self.assertEqual(b'250 http://pubmob.com/\r\n', response_instead.output_string)
 
     @unittest.skip('soon')
     def test_ehlo_response_includes_gdpr_capability(self):
@@ -61,8 +61,8 @@ class TestStrangler(unittest.TestCase):
         self.assertEqual(expected_response_instead, response_instead.output_string)
 
     @unittest.skip('soon')
-    def test_reject_mail_from_amit(self):
-        request = StringInput(b'MAIL FROM: amit\r\n')
+    def test_reject_mail_from_jlangr(self):
+        request = StringInput(b'MAIL FROM: jlangr\r\n')
         request_instead = StringOutput()
         response = StringInput(b'250 ok\r\n')
         response_instead = StringOutput()
@@ -71,7 +71,7 @@ class TestStrangler(unittest.TestCase):
         strangler.requests.read(GENEROUS_READ_LENGTH)
         strangler.requests.send()
 
-        expected_request_instead = b'NOOP MAIL FROM: amit\r\n'
+        expected_request_instead = b'NOOP MAIL FROM: jlangr\r\n'
         self.assertEqual(expected_request_instead, request_instead.output_string)
 
         strangler.responses.read(GENEROUS_READ_LENGTH)

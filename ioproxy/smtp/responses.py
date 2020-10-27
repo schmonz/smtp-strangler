@@ -7,6 +7,7 @@ from ioproxy.smtp.request_parser import SMTPRequestParser
 class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
+        self.request_was_ehlo = False
         self.request_was_pubmob = False
         self.safe_to_modify = True
 
@@ -55,12 +56,17 @@ class SMTPResponses(LinesIn):
 
         if self.request_was_pubmob: 
             message = b'250 http://pubmob.com/\r\n'
-            
+
+        if self.request_was_ehlo:
+            message += b'250 GDPR 20160414\r\n'
+
         message = self.__reformat_multiline_response(message)
         return message
 
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
-        if verb.upper() \
-                == b'PUBMOB':
+        if verb.upper() == b'PUBMOB':
             self.request_was_pubmob = True
+
+        if verb.upper() == b'EHLO' :
+            self.request_was_ehlo = True

@@ -21,7 +21,7 @@ class TestStrangler(unittest.TestCase):
 
         self.assertEqual(b'QUIT plz\r\n', request_instead.output_string)
 
-    @unittest.skip('soon')
+
     def test_pubmob_gives_pubmob_url(self):
         request = StringInput(b'PUBMOB\r\n')
         request_instead = StringOutput()

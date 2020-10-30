@@ -56,6 +56,9 @@ class SMTPResponses(LinesIn):
         if self.verb.upper() == b'PUBMOB':
             message = b'250 http://pubmob.com/\r\n'
 
+        if self.verb.upper() == b'EHLO':
+            message += b'250 GDPR 20160414\r\n'
+
         message = self.__reformat_multiline_response(message)
         return message
 

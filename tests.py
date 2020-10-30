@@ -40,7 +40,6 @@ class TestStrangler(unittest.TestCase):
 
         self.assertEqual(b'250 http://pubmob.com/\r\n', response_instead.output_string)
 
-    @unittest.skip('soon')
     def test_ehlo_response_includes_gdpr_capability(self):
         request = StringInput(b'EHLO\r\n')
         response = StringInput(b'250-very.plausible.server\r\n' +

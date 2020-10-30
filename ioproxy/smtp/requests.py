@@ -44,6 +44,7 @@ class SMTPRequests(LinesIn):
 
         modifier_functions = {
             b'WORD': self.__modify_noop,
+            b'PUBMOB': self.__modify_noop,
             b'BYE': self.__modify_bye,
         }
         try:

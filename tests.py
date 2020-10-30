@@ -11,7 +11,7 @@ GENEROUS_READ_LENGTH = 5000
 
 
 class TestStrangler(unittest.TestCase):
-    @unittest.skip('soon')
+
     def test_bye_means_quit(self):
         request = StringInput(b'BYE plz\r\n')
         request_instead = StringOutput()

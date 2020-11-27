@@ -16,6 +16,10 @@ to the client. This is pretty boring. But since it's written in Python,
 not idiosyncratic old C, it's pretty easy to start handling certain
 requests in a new way.
 
+Not exactly like this image (by Christopher J. Wells, [here](http://www.technologyuk.net/computing/website-development/world-wide-web/http.shtml), but almost:
+
+[proxy server](proxy_server.gif)
+
 ## Setup
 
 ### 0. Have Linux or another Unix-like system

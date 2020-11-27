@@ -54,13 +54,13 @@ class SMTPResponses(LinesIn):
             return message
 
         if self.request_was_pubmob:
-            message = b'250 http://pubmob.com'
+            message = b'250 http://pubmob.com/\r\n'
 
         message = self.__reformat_multiline_response(message)
         return message
 
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
-        if verb is b'PUBMOB':
+        if verb.upper() == b'PUBMOB':
             self.request_was_pubmob = True
 

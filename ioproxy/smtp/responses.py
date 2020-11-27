@@ -7,6 +7,7 @@ from ioproxy.smtp.request_parser import SMTPRequestParser
 class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
+        self.request_was_pubmob = False
         self.safe_to_modify = True
 
     @staticmethod
@@ -52,10 +53,14 @@ class SMTPResponses(LinesIn):
         if not self.safe_to_modify:
             return message
 
+        if self.request_was_pubmob:
+            message = b'250 http://pubmob.com'
 
         message = self.__reformat_multiline_response(message)
         return message
 
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
+        if verb is b'PUBMOB':
+            self.request_was_pubmob = True
 

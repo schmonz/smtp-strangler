@@ -1,7 +1,7 @@
 # smtp-strangler
 
 This is an implementation of the
-[Strangler pattern](https://martinfowler.com/bliki/StranglerApplication.html)
+[Strangler Fig pattern](https://martinfowler.com/bliki/StranglerFigApplication.html)
 for any SMTP server program that can run under
 [inetd(8)](https://wiki.netbsd.org/guide/inetd/)
 or

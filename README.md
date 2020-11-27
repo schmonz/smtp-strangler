@@ -22,7 +22,7 @@ Not exactly like this image (by Christopher J. Wells, [here](http://www.technolo
 
 ## Setup
 
-### 0. Have Linux or another Unix-like system
+### 0. Have macOS, Linux, or another Unix-like system
 
 - The legacy code to be strangled is a Unix command-line program
 - [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10) _might_ work; if you try, please let me know

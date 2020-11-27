@@ -61,6 +61,7 @@ class SMTPResponses(LinesIn):
 
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
+        self.request_was_pubmob = False
         if verb.upper() == b'PUBMOB':
             self.request_was_pubmob = True
 

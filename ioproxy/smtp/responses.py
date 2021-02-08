@@ -8,6 +8,7 @@ class SMTPResponses(LinesIn):
     def __init__(self, logger, input_source, output_fd):
         LinesIn.__init__(self, logger, input_source, output_fd)
         self.safe_to_modify = True
+        self.previous_verb = b''
 
     @staticmethod
     def __reformat_multiline_response(message):
@@ -52,10 +53,14 @@ class SMTPResponses(LinesIn):
         if not self.safe_to_modify:
             return message
 
+        if self.previous_verb == b'OOP':
+            message = b'250 https://www.oop-konferenz.de/oop2021/english.html\r\n'
+        if self.previous_verb == b'EHLO':
+            message += b'250 GDPR 20160414\r\n'
 
         message = self.__reformat_multiline_response(message)
         return message
 
     def set_state_for_next_response(self, message):
         (verb, arg) = SMTPRequestParser(message).get_verb_and_arg()
-
+        self.previous_verb = verb.upper()

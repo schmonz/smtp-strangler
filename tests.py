@@ -23,24 +23,6 @@ class TestStrangler(unittest.TestCase):
         self.assertEqual(b'QUIT plz\r\n', request_instead.output_string)
 
     @unittest.skip('soon')
-    def test_pubmob_gives_pubmob_url(self):
-        request = StringInput(b'PUBMOB\r\n')
-        request_instead = StringOutput()
-        response = StringInput(b'777 incredibly fake server response\r\n')
-        response_instead = StringOutput()
-        strangler = SMTPStringStrangler(DoNothingLogger(), request, request_instead, response, response_instead)
-
-        strangler.requests.read(GENEROUS_READ_LENGTH)
-        strangler.requests.send()
-
-        self.assertEqual(b'NOOP PUBMOB \r\n', request_instead.output_string)
-
-        strangler.responses.read(GENEROUS_READ_LENGTH)
-        strangler.responses.send()
-
-        self.assertEqual(b'250 http://pubmob.com/\r\n', response_instead.output_string)
-
-    @unittest.skip('soon')
     def test_ehlo_response_includes_gdpr_capability(self):
         request = StringInput(b'EHLO\r\n')
         response = StringInput(b'250-very.plausible.server\r\n' +
@@ -58,26 +40,6 @@ class TestStrangler(unittest.TestCase):
         strangler.responses.read(GENEROUS_READ_LENGTH)
         strangler.responses.send()
 
-        self.assertEqual(expected_response_instead, response_instead.output_string)
-
-    @unittest.skip('soon')
-    def test_reject_mail_from_jlangr(self):
-        request = StringInput(b'MAIL FROM: jlangr\r\n')
-        request_instead = StringOutput()
-        response = StringInput(b'250 ok\r\n')
-        response_instead = StringOutput()
-        strangler = SMTPStringStrangler(DoNothingLogger(), request, request_instead, response, response_instead)
-
-        strangler.requests.read(GENEROUS_READ_LENGTH)
-        strangler.requests.send()
-
-        expected_request_instead = b'NOOP MAIL FROM: jlangr\r\n'
-        self.assertEqual(expected_request_instead, request_instead.output_string)
-
-        strangler.responses.read(GENEROUS_READ_LENGTH)
-        strangler.responses.send()
-
-        expected_response_instead = b'553 sorry, your envelope sender is in my badmailfrom list (#5.7.1)\r\n'
         self.assertEqual(expected_response_instead, response_instead.output_string)
 
 
